@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Simulador LIG/CuO-NPs/CS — Glicose no suor</title>
+<style>
+:root{font-family:system-ui,Arial,sans-serif;color:#e7edf6;background:#0c1423}*{box-sizing:border-box}body{margin:0}.wrap{max-width:1250px;margin:auto;padding:24px}h1{font-size:clamp(1.5rem,3vw,2.3rem);margin:8px 0}h2{font-size:1.12rem;margin:0 0 15px}.muted{color:#a8b7cb;font-size:.9rem}.tag{color:#80dbce;font-weight:700;letter-spacing:.08em;font-size:.75rem}.panel{background:#152238;border:1px solid #30435e;border-radius:15px;padding:20px;margin:15px 0}.layout{display:grid;grid-template-columns:310px 1fr;gap:18px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.metric{background:#0e1a2b;padding:14px;border-radius:10px}.metric strong{font-size:1.5rem;color:#86ddce;display:block}.field{margin:15px 0}.field label{display:flex;justify-content:space-between;font-size:.91rem;gap:10px}input[type=range]{width:100%;accent-color:#51c6b6}button{border:0;border-radius:9px;padding:11px 14px;background:#48bbaa;color:#071b23;font-weight:700;cursor:pointer;margin:4px 5px 4px 0}button.secondary{background:#30445d;color:#f2f6fa}canvas{width:100%;height:330px;background:#101d30;border-radius:10px;display:block}.smallcanvas{height:255px}table{width:100%;border-collapse:collapse;font-size:.86rem}td,th{padding:8px;border-bottom:1px solid #34465d;text-align:right}td:first-child,th:first-child{text-align:left}.warning{border-left:4px solid #e9ad63;padding:12px;background:#2b2830;color:#f7e3c7}.footer{line-height:1.6}.pill{background:#244052;border-radius:30px;padding:5px 10px;display:inline-block;font-size:.78rem;color:#bde9e1}select{background:#0e1a2b;color:white;border:1px solid #49607c;padding:9px;border-radius:8px;width:100%}@media(max-width:850px){.layout{grid-template-columns:1fr}.grid{grid-template-columns:1fr 1fr}}@media(max-width:530px){.grid{grid-template-columns:1fr}.wrap{padding:12px}}
+</style></head><body><main class="wrap">
+<div class="tag">SIMULADOR CIENTÍFICO · MODELO EXPLORATÓRIO</div>
+<h1>Sensor de glicose no suor — LIG/CuO-NPs/CS</h1>
+<p class="muted">Baseado no artigo <em>Development of enzyme-free sensors for glucose detection in sweat</em>. Voltametria de onda quadrada (SWV), calibração, Monte Carlo e avaliação de incerteza.</p>
+<div class="warning"><b>Atenção:</b> os parâmetros de corrente, sensibilidade, ruído e forma das curvas são <b>sintéticos e ajustáveis</b>, não dados brutos medidos no artigo. A faixa 0,032–0,250 mM, o pico em aproximadamente −0,13 V e a amplitude SWV de 0,025 V são informações reportadas no texto. Esta ferramenta não valida o sensor para uso clínico nem estima glicemia sanguínea.</div>
+<div class="layout"><aside class="panel"><h2>Parâmetros da simulação</h2>
+<div class="field"><label>Concentração <output id="vc"></output></label><input id="c" type="range" min=".032" max=".25" step=".001" value=".120"></div>
+<div class="field"><label>Sensibilidade <output id="vs"></output></label><input id="s" type="range" min="300" max="2200" step="50" value="1200"></div>
+<div class="field"><label>Corrente de base <output id="vb"></output></label><input id="b" type="range" min="100" max="600" step="10" value="380"></div>
+<div class="field"><label>Ruído instrumental (σ) <output id="vn"></output></label><input id="n" type="range" min="1" max="40" step="1" value="12"></div>
+<div class="field"><label>Variação entre eletrodos <output id="vv"></output></label><input id="v" type="range" min="0" max="25" step="1" value="8"></div>
+<div class="field"><label>Número de eletrodos <output id="ve"></output></label><input id="e" type="range" min="3" max="30" step="1" value="10"></div>
+<div class="field"><label>Replicatas por concentração <output id="vr"></output></label><input id="r" type="range" min="2" max="20" step="1" value="5"></div>
+<div class="field"><label>Deslocamento de pico <output id="vp"></output></label><input id="p" type="range" min="-.05" max=".05" step=".005" value="0"></div>
+<button id="run">Gerar nova simulação</button><button class="secondary" id="reset">Restaurar</button>
+<button class="secondary" id="csv">Exportar CSV</button><p class="muted">Cada execução sorteia novos erros sintéticos. A concentração nominal é conhecida, permitindo avaliar a recuperação simulada.</p></aside>
+<section>
+<div class="grid">
+<div class="metric"><span class="muted">Corrente prevista</span><strong id="mI">—</strong><small>µA, pico simplificado</small></div>
+<div class="metric"><span class="muted">R² calibração</span><strong id="mR">—</strong><small>ajuste linear sintético</small></div>
+<div class="metric"><span class="muted">CV médio intrassensor</span><strong id="mCV">—</strong><small>repetibilidade simulada</small></div>
+<div class="metric"><span class="muted">Recuperação média</span><strong id="mRec">—</strong><small>concentrações de teste</small></div>
+<div class="metric"><span class="muted">LOD estimado</span><strong id="mLOD">—</strong><small>3,3 σ branco / inclinação</small></div>
+<div class="metric"><span class="muted">LOQ estimado</span><strong id="mLOQ">—</strong><small>10 σ branco / inclinação</small></div>
+</div>
+<div class="panel"><h2>1. Voltamograma SWV sintético</h2><canvas id="volt"></canvas><p class="muted">Curvas estilizadas com pico próximo a −0,13 V; não representam solução mecanística das equações eletroquímicas. Eixo de potencial: −0,30 a +0,60 V.</p></div>
+<div class="panel"><h2>2. Curva de calibração e regressão</h2><canvas id="cal" class="smallcanvas"></canvas><p id="eq" class="muted"></p></div>
+<div class="panel"><h2>3. Incerteza Monte Carlo na concentração selecionada</h2><canvas id="hist" class="smallcanvas"></canvas><p id="ci" class="muted"></p></div>
+</section></div>
+<div class="panel"><h2>4. Tabela de resultados sintéticos</h2><div style="overflow:auto"><table><thead><tr><th>Concentração nominal (mM)</th><th>Corrente média (µA)</th><th>DP (µA)</th><th>CV (%)</th><th>Concentração estimada (mM)</th><th>Recuperação (%)</th></tr></thead><tbody id="rows"></tbody></table></div></div>
+<div class="panel footer"><h2>Como interpretar a confiabilidade</h2>
+<p><b>R²</b> mede adequação ao modelo linear, mas não prova exatidão. <b>CV</b> mede dispersão relativa das replicatas. <b>Recuperação</b> compara concentração estimada e nominal. <b>LOD/LOQ</b> dependem do ruído do branco e da inclinação; os valores aqui são apenas ilustrativos. <b>Monte Carlo</b> propaga ruído e variabilidade entre eletrodos, sob hipóteses normais independentes.</p>
+<p>Para validação experimental, substituir os dados sintéticos por arquivos do PalmSens4 com corrente × potencial, concentração nominal, identificação de eletrodo, replicatas, branco, matriz e condições experimentais. Avaliar também seletividade, deriva temporal, efeito de matriz, recuperação em amostras fortificadas e concordância com método de referência. O gráfico de Bland–Altman do artigo compara técnicas, mas não substitui essas verificações.</p>
+<p><b>Limitações do artigo:</b> a preparação de padrões descreve 0,25–2,0 mM, enquanto a discussão dos voltamogramas cita 0,032–0,250 mM; as faixas devem ser conciliadas antes da análise definitiva. Os dados completos de replicatas não estão no documento. A relação glicose no suor × glicemia sanguínea não é inferida aqui.</p></div>
+<div class="panel" id="comparison"><h2>5. Banco de biossensores — arquiteturas documentadas</h2>
+<p class="muted">Transcrição da planilha anexa. Grafias originais preservadas. As arquiteturas não possuem resultados quantitativos de desempenho na planilha.</p>
+<div class="grid"><div class="field"><label for="analyte">Analito</label><select id="analyte"></select></div>
+<div class="field"><label for="tech">Técnica</label><select id="tech"><option value="">Todas</option><option value="voltametria">Voltametria</option><option value="impedancia">Impedância</option></select></div>
+<div class="field"><label for="wires">Quantidade de fios</label><select id="wires"><option value="">Todas</option><option value="3">3</option><option value="4">4</option></select></div></div>
+<div style="overflow:auto"><table><thead><tr><th>Analito</th><th>Substrato</th><th>Biorreceptor / nanomaterial</th><th>Técnica</th><th>Fios</th></tr></thead><tbody id="biosrows"></tbody></table></div>
+<p id="biosnote" class="muted"></p>
+<h2>Comparação de cenários (hipotética)</h2>
+<p>Os parâmetros abaixo são escolhidos pelo usuário e <b>não foram medidos</b> na planilha. A comparação quantitativa é restrita a cenários de detecção de glicose. Não se deve comparar diretamente correntes de analitos ou técnicas diferentes.</p>
+<div class="grid">
+<div class="field"><label>Sensibilidade cenário A (µA/mM) <output id="caOut"></output></label><input type="range" id="ca" min="300" max="2200" step="50" value="1200"></div>
+<div class="field"><label>Sensibilidade cenário B (µA/mM) <output id="cbOut"></output></label><input type="range" id="cb" min="300" max="2200" step="50" value="850"></div>
+<div class="field"><label>Ruído cenário B (µA) <output id="cnOut"></output></label><input type="range" id="cn" min="1" max="40" value="18"></div>
+</div>
+<canvas id="compare" class="smallcanvas"></canvas><p id="compareNote" class="muted"></p></div>
+<div class="panel"><h2>6. Importar medições reais para calibração</h2>
+<p>Importe CSV com colunas <code>concentracao_mM,corrente_uA,eletrodo,replicata</code>. Cada linha corresponde a uma medição independente ou replicata. As duas primeiras colunas são obrigatórias; as demais permitem rastrear a repetibilidade e reprodutibilidade.</p>
+<input type="file" id="realFile" accept=".csv,text/csv" style="max-width:100%">
+<button id="exampleCSV" class="secondary">Baixar modelo CSV</button><button id="clearReal" class="secondary">Remover dados importados</button>
+<p id="realStatus" class="muted">Nenhum arquivo real importado.</p>
+<canvas id="realChart" class="smallcanvas"></canvas>
+<div class="grid"><div class="metric"><span class="muted">Medições importadas</span><strong id="realN">—</strong></div><div class="metric"><span class="muted">R² experimental</span><strong id="realR">—</strong></div><div class="metric"><span class="muted">Inclinação</span><strong id="realSlope">—</strong><small>µA/mM</small></div></div>
+<p class="muted">A regressão usa todas as linhas válidas. Para uma validação formal, separar calibração e teste por eletrodo/lote, medir brancos e reportar incerteza, interferentes e efeito de matriz. Um R² elevado isoladamente não demonstra confiabilidade.</p></div></main>
+<script>
+const $=id=>document.getElementById(id), ids=['c','s','b','n','v','e','r','p'], defaults={c:.120,s:1200,b:380,n:12,v:8,e:10,r:5,p:0};let dataset=[], fit={a:0,b:0,r2:0}, samples=[];
+const rand=()=>{let u=1-Math.random(),v=1-Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)};
+const mean=a=>a.reduce((x,y)=>x+y,0)/a.length;
+const sd=a=>Math.sqrt(a.reduce((x,y)=>x+(y-mean(a))**2,0)/Math.max(1,a.length-1));
+const val=id=>+$ (id).value;
+function draw(id, series, xMin,xMax,yMin,yMax,xLabel,yLabel){const canvas=$(id),dpr=devicePixelRatio||1,w=canvas.clientWidth,h=canvas.clientHeight;canvas.width=w*dpr;canvas.height=h*dpr;let ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);const L=62,R=20,T=20,B=49,pw=w-L-R,ph=h-T-B;ctx.clearRect(0,0,w,h);ctx.font='12px system-ui';ctx.strokeStyle='#2f445d';ctx.fillStyle='#a8b7cb';ctx.lineWidth=1;for(let i=0;i<=5;i++){let y=T+ph*i/5,x=L+pw*i/5;ctx.beginPath();ctx.moveTo(L,y);ctx.lineTo(w-R,y);ctx.stroke();ctx.fillText((yMax-(yMax-yMin)*i/5).toFixed(yMax-yMin<2?2:0),4,y+4);ctx.beginPath();ctx.moveTo(x,T);ctx.lineTo(x,T+ph);ctx.stroke();ctx.fillText((xMin+(xMax-xMin)*i/5).toFixed(2),x-14,h-27)}ctx.fillText(xLabel,w/2-30,h-6);ctx.save();ctx.translate(13,h/2+40);ctx.rotate(-Math.PI/2);ctx.fillText(yLabel,0,0);ctx.restore();const X=x=>L+(x-xMin)/(xMax-xMin)*pw,Y=y=>T+(yMax-y)/(yMax-yMin)*ph;
+series.forEach(s=>{ctx.strokeStyle=s.color||'#50c9b7';ctx.fillStyle=s.color||'#50c9b7';ctx.lineWidth=s.width||2;ctx.beginPath();s.points.forEach((p,i)=>{let x=X(p[0]),y=Y(p[1]);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});if(s.line!==false)ctx.stroke();if(s.dots){s.points.forEach(p=>{ctx.beginPath();ctx.arc(X(p[0]),Y(p[1]),3,0,2*Math.PI);ctx.fill()})}})}
+function simulate(){const c=val('c'),s=val('s'),b=val('b'),n=val('n'),v=val('v')/100,e=val('e'),r=val('r'),p=val('p');ids.forEach(id=>{$('v'+id).textContent=({c:()=>c.toFixed(3)+' mM',s:()=>s+' µA/mM',b:()=>b+' µA',n:()=>n+' µA',v:()=>val('v')+'%',e:()=>e,r:()=>r,p:()=>p.toFixed(3)+' V'})[id]()});const levels=[.032,.063,.091,.116,.143,.180,.218,.250], factors=Array.from({length:e},()=>1+v*rand());dataset=levels.map(C=>{let per=factors.map(f=>Array.from({length:r},()=>b+s*C*f+n*rand()));let all=per.flat();return {C,avg:mean(all),std:sd(all),cv:mean(per.map(a=>100*sd(a)/Math.abs(mean(a)))),all}});const xs=dataset.map(d=>d.C),ys=dataset.map(d=>d.avg),xm=mean(xs),ym=mean(ys);let slope=xs.reduce((a,x,i)=>a+(x-xm)*(ys[i]-ym),0)/xs.reduce((a,x)=>a+(x-xm)**2,0),intercept=ym-slope*xm;let ssTot=ys.reduce((a,y)=>a+(y-ym)**2,0),ssRes=ys.reduce((a,y,i)=>a+(y-(intercept+slope*xs[i]))**2,0);fit={a:intercept,b:slope,r2:1-ssRes/ssTot};dataset.forEach(d=>{d.estimate=(d.avg-intercept)/slope;d.recovery=100*d.estimate/d.C});$('mI').textContent=(b+s*c).toFixed(1);$('mR').textContent=fit.r2.toFixed(4);$('mCV').textContent=mean(dataset.map(d=>d.cv)).toFixed(2)+'%';$('mRec').textContent=mean(dataset.map(d=>d.recovery)).toFixed(1)+'%';$('mLOD').textContent=(3.3*n/Math.abs(slope)).toFixed(4)+' mM';$('mLOQ').textContent=(10*n/Math.abs(slope)).toFixed(4)+' mM';
+let curves=[.032,.063,.116,.180,.250].map((C,i)=>{let points=[];for(let k=0;k<=220;k++){let x=-.3+.9*k/220;let peak=(b+s*C)*Math.exp(-.5*((x-(-.13+p))/.052)**2);let tail=65+80*Math.max(0,x-.15);points.push([x,peak+tail])}return {points,color:['#6d82dd','#4caaef','#50c9b7','#c5a36b','#eb8d80'][i]}});draw('volt',curves,-.3,.6,0,b+s*.25+200,'Potencial (V)','Corrente (µA)');
+let line=[[0,intercept],[.26,intercept+slope*.26]];draw('cal',[{points:line,color:'#50c9b7'},{points:dataset.map(d=>[d.C,d.avg]),color:'#ffb76c',dots:true,line:false}],0,.26,Math.min(b-20,...ys)-20,Math.max(...ys)+50,'Glicose (mM)','Corrente (µA)');$('eq').textContent=`I = ${intercept.toFixed(2)} + ${slope.toFixed(2)} × C (µA); R² = ${fit.r2.toFixed(4)}.`;
+samples=Array.from({length:3000},()=>((b+s*c*(1+v*rand())+n*rand())-intercept)/slope).sort((a,b)=>a-b);let lo=samples[75],hi=samples[2924],min=Math.min(samples[0],c),max=Math.max(samples.at(-1),c),bins=32,counts=Array(bins).fill(0);samples.forEach(x=>{let i=Math.max(0,Math.min(bins-1,Math.floor((x-min)/(max-min)*bins)));counts[i]++});let points=counts.map((y,i)=>[min+(i+.5)*(max-min)/bins,y]);draw('hist',[{points,color:'#8fb8ff'}],min,max,0,Math.max(...counts)*1.15,'Glicose (mM)','Frequência');$('ci').textContent=`Intervalo central de 95% simulado: ${lo.toFixed(4)} a ${hi.toFixed(4)} mM. Média: ${mean(samples).toFixed(4)} mM. Não é intervalo de confiança validado experimentalmente.`;
+$('rows').innerHTML=dataset.map(d=>`<tr><td>${d.C.toFixed(3)}</td><td>${d.avg.toFixed(2)}</td><td>${d.std.toFixed(2)}</td><td>${d.cv.toFixed(2)}</td><td>${d.estimate.toFixed(4)}</td><td>${d.recovery.toFixed(1)}</td></tr>`).join('')}
+ids.forEach(id=>$(id).addEventListener('input',simulate));$('run').onclick=simulate;$('reset').onclick=()=>{ids.forEach(id=>$(id).value=defaults[id]);simulate()};$('csv').onclick=()=>{let csv='concentracao_nominal_mM,corrente_media_uA,desvio_padrao_uA,cv_intrassensor_pct,concentracao_estimada_mM,recuperacao_pct\n'+dataset.map(d=>[d.C,d.avg,d.std,d.cv,d.estimate,d.recovery].join(',')).join('\n');let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='simulacao_glicose_sintetica.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
+window.addEventListener('resize',()=>simulate());simulate();
+
+const biosDB=[["lactato", "grafeno", "CuO", "Voltametria ciclia", 3], ["glicose", "grafeno", "glicose oxidase", "impedancia", 4], ["lactose", "grafeno", "lactase", "voltametria ciclia", 3], ["progesterona", "grafeno", "apatemero", "impedancia", 4], ["bacteria", "grafeno", "enzima", "impedancia", 4], ["saxitoxina", "grafeno", "aptamero", "impedancia", 4], ["cancer de pancreas", "grafeno", "", "impedancia", 4]];
+function updateBios(){const a=$('analyte').value,t=$('tech').value,w=$('wires').value;
+const filtered=biosDB.filter(x=>(!a||x[0]===a)&&(!t||x[3].toLowerCase().includes(t))&&(!w||String(x[4])===w));
+$('biosrows').innerHTML=filtered.map(x=>'<tr>'+x.map(y=>'<td>'+String(y||'não informado').replaceAll('&','&amp;').replaceAll('<','&lt;')+'</td>').join('')+'</tr>').join('')||'<tr><td colspan="5">Nenhum registro com esses filtros</td></tr>';
+$('biosnote').textContent=filtered.length+' de '+biosDB.length+' arquiteturas documentadas. O artigo principal utiliza LIG/CuO-NPs/CS, SWV e célula de três eletrodos; essa arquitetura não aparece como registro específico na planilha.';
+}
+$('analyte').innerHTML='<option value="">Todos</option>'+biosDB.map(x=>x[0]).filter((v,i,a)=>a.indexOf(v)===i).map(x=>'<option value="'+x+'">'+x+'</option>').join('');
+['analyte','tech','wires'].forEach(id=>$(id).addEventListener('change',updateBios));updateBios();
+function compareScenarios(){let a=+$('ca').value,b=+$('cb').value,n=+$('cn').value;
+$('caOut').textContent=a;$('cbOut').textContent=b;$('cnOut').textContent=n;
+let cvals=[.032,.063,.091,.116,.143,.18,.218,.25];
+draw('compare',[{points:cvals.map(c=>[c,380+a*c]),color:'#50c9b7',dots:true},{points:cvals.map(c=>[c,380+b*c]),color:'#ffb76c',dots:true}],0,.26,360,Math.max(380+a*.25,380+b*.25)+45,'Glicose (mM)','Corrente (µA)');
+$('compareNote').textContent='Cenário A: modelo LIG/CuO-NPs/CS hipotético (verde), LOD ilustrativo '+(3.3*val('n')/a).toFixed(4)+' mM. Cenário B: alternativa hipotética para glicose (laranja), LOD ilustrativo '+(3.3*n/b).toFixed(4)+' mM. Não representa medição real de sensor enzimático ou impedimétrico.';
+}
+['ca','cb','cn'].forEach(id=>$(id).addEventListener('input',compareScenarios));compareScenarios();
+function parseCSV(txt){let lines=txt.replace(/^\uFEFF/,'').trim().split(/\r?\n/);if(lines.length<3)throw Error('São necessárias pelo menos duas medições e uma linha de cabeçalho.');
+let delim=lines[0].includes(';')?';':',',head=lines.shift().split(delim).map(x=>x.trim().toLowerCase().replaceAll('"',''));
+let ci=head.indexOf('concentracao_mm'),ii=head.indexOf('corrente_ua');
+if(ci<0||ii<0)throw Error('Cabeçalho obrigatório: concentracao_mM,corrente_uA');
+let out=lines.map(line=>{let cols=line.split(delim),c=Number(cols[ci].trim().replace(',','.')),i=Number(cols[ii].trim().replace(',','.'));return {c,i}}).filter(x=>Number.isFinite(x.c)&&Number.isFinite(x.i)&&x.c>=0);
+if(out.length<2||new Set(out.map(x=>x.c)).size<2)throw Error('Informe ao menos duas concentrações diferentes com valores numéricos válidos.');
+return out;}
+function showReal(rows){let xs=rows.map(x=>x.c),ys=rows.map(x=>x.i),xm=mean(xs),ym=mean(ys),den=xs.reduce((a,x)=>a+(x-xm)**2,0),s=xs.reduce((a,x,i)=>a+(x-xm)*(ys[i]-ym),0)/den,b=ym-s*xm;
+let ss=ys.reduce((a,y)=>a+(y-ym)**2,0),res=ys.reduce((a,y,i)=>a+(y-b-s*xs[i])**2,0),r2=ss===0?NaN:1-res/ss;
+let minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys,b+s*minX,b+s*maxX),maxY=Math.max(...ys,b+s*minX,b+s*maxX),padY=Math.max(1,(maxY-minY)*.12);
+draw('realChart',[{points:[[minX,b+s*minX],[maxX,b+s*maxX]],color:'#50c9b7'},{points:rows.map(x=>[x.c,x.i]),color:'#ffb76c',dots:true,line:false}],Math.max(0,minX-(maxX-minX)*.05),maxX+(maxX-minX)*.05,minY-padY,maxY+padY,'Glicose (mM)','Corrente (µA)');
+$('realN').textContent=rows.length;$('realR').textContent=Number.isFinite(r2)?r2.toFixed(4):'indef.';$('realSlope').textContent=s.toFixed(2);
+$('realStatus').textContent=rows.length+' medições carregadas. Ajuste: I = '+b.toFixed(3)+' + '+s.toFixed(3)+' × C. Dados importados processados localmente no navegador.';
+}
+$('realFile').addEventListener('change',async function(){try{let f=this.files[0];if(!f)return;if(f.size>3e6)throw Error('Arquivo excede 3 MB.');showReal(parseCSV(await f.text()))}catch(e){$('realStatus').textContent='Erro: '+e.message;}});
+$('clearReal').onclick=()=>{$('realFile').value='';$('realStatus').textContent='Nenhum arquivo real importado.';['realN','realR','realSlope'].forEach(id=>$(id).textContent='—');$('realChart').getContext('2d').clearRect(0,0,$('realChart').width,$('realChart').height)};
+$('exampleCSV').onclick=()=>{let csv='concentracao_mM,corrente_uA,eletrodo,replicata\n0.032,420,E1,1\n0.032,424,E1,2\n0.063,457,E1,1\n0.063,460,E1,2\n';let link=document.createElement('a');link.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));link.download='modelo_dados_exemplo_SINTETICOS.csv';link.click();setTimeout(()=>URL.revokeObjectURL(link.href),1000)};
+window.addEventListener('resize',compareScenarios);
+</script></body></html>

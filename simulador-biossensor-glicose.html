@@ -1,0 +1,1488 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador LIG/CuO-NPs/CS — Sensor Enzima-Livre de Glicose no Suor</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.0/dist/chartjs-plugin-annotation.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1620;
+    --bg-panel: #182030;
+    --bg-card: #1f2838;
+    --border: #2a3548;
+    --text: #e8eef5;
+    --text-dim: #94a3b8;
+    --primary: #00b4d8;
+    --primary-dark: #0077b6;
+    --accent: #fbbf24;
+    --accent2: #f97316;
+    --success: #22c55e;
+    --danger: #ef4444;
+    --warn: #f59e0b;
+    --info: #818cf8;
+    --grid: rgba(148, 163, 184, 0.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+  /* Topbar */
+  header.topbar {
+    background: linear-gradient(135deg, #0a1a2f 0%, #0f1620 60%, #0d2840 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 26px 40px 22px;
+    position: relative;
+    overflow: hidden;
+  }
+  header.topbar::before {
+    content: "";
+    position: absolute; right: -100px; top: -100px;
+    width: 360px; height: 360px;
+    background: radial-gradient(circle, rgba(0,180,216,0.18) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  header.topbar h1 {
+    font-size: 26px; font-weight: 700; letter-spacing: -0.3px;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+  header.topbar h1 .tag {
+    background: var(--accent); color: #1a1300;
+    font-size: 11px; font-weight: 700;
+    padding: 3px 8px; border-radius: 4px;
+    margin-left: 10px; vertical-align: middle;
+    letter-spacing: 0.5px;
+  }
+  header.topbar .subtitle { color: var(--text-dim); font-size: 14px; max-width: 900px; }
+  header.topbar .meta {
+    display: flex; flex-wrap: wrap; gap: 18px;
+    margin-top: 14px; font-size: 12.5px; color: var(--text-dim);
+  }
+  header.topbar .meta span { display: inline-flex; align-items: center; gap: 6px; }
+  header.topbar .meta span::before {
+    content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--primary);
+  }
+  /* Layout */
+  .layout { display: grid; grid-template-columns: 230px 1fr; gap: 0; max-width: 1500px; margin: 0 auto; }
+  nav.sidebar {
+    position: sticky; top: 0; height: 100vh; overflow-y: auto;
+    padding: 24px 16px; border-right: 1px solid var(--border);
+    background: rgba(15,22,32,0.6);
+  }
+  nav.sidebar h3 {
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: 1.4px;
+    color: var(--text-dim); margin: 18px 0 8px; padding-left: 8px;
+  }
+  nav.sidebar a {
+    display: block; padding: 8px 10px; border-radius: 6px;
+    color: var(--text-dim); text-decoration: none; font-size: 13.5px;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  nav.sidebar a:hover { color: var(--text); background: rgba(0,180,216,0.08); border-left-color: var(--primary); }
+  nav.sidebar a.active { color: var(--accent); background: rgba(251,191,36,0.06); border-left-color: var(--accent); }
+  nav.sidebar a .num {
+    display: inline-block; width: 18px; height: 18px; line-height: 18px; text-align: center;
+    background: var(--bg-card); border-radius: 4px; font-size: 10px; margin-right: 8px;
+    color: var(--text);
+  }
+  main { padding: 30px 40px 80px; min-width: 0; }
+  /* Sections */
+  section { margin-bottom: 50px; scroll-margin-top: 20px; }
+  section h2 {
+    font-size: 22px; font-weight: 700; margin-bottom: 6px; color: #fff;
+    display: flex; align-items: center; gap: 12px;
+  }
+  section h2 .num {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #fff; width: 36px; height: 36px; border-radius: 8px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 700;
+  }
+  section .lead { color: var(--text-dim); font-size: 14px; margin-bottom: 22px; max-width: 900px; }
+  /* Cards */
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 22px; margin-bottom: 18px;
+  }
+  .card h3 { font-size: 15.5px; margin-bottom: 12px; color: #fff; display: flex; align-items: center; gap: 8px; }
+  .card h3 .ico { color: var(--accent); }
+  /* Grid layouts */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  @media (max-width: 1100px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .layout { grid-template-columns: 1fr; }
+    nav.sidebar { position: relative; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+    main { padding: 20px; }
+  }
+  /* Stat blocks */
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .stat {
+    background: linear-gradient(135deg, var(--bg-panel), var(--bg-card));
+    border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-dim); }
+  .stat .value { font-size: 22px; font-weight: 700; color: var(--accent); margin-top: 4px; }
+  .stat .unit { font-size: 12px; color: var(--text-dim); margin-left: 4px; font-weight: 400; }
+  .stat .sub { font-size: 11.5px; color: var(--text-dim); margin-top: 2px; }
+  /* Controls */
+  .controls { background: rgba(0,0,0,0.18); border-radius: 10px; padding: 18px; margin-bottom: 18px; }
+  .controls .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
+  .ctrl label { display: block; font-size: 12.5px; color: var(--text-dim); margin-bottom: 6px; }
+  .ctrl label .v { color: var(--accent); font-weight: 600; float: right; }
+  .ctrl input[type=range] { width: 100%; accent-color: var(--primary); height: 4px; }
+  .ctrl select, .ctrl input[type=number] {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); padding: 7px 10px; border-radius: 6px; font-size: 13px;
+  }
+  .ctrl .hint { font-size: 10.5px; color: var(--text-dim); margin-top: 4px; }
+  /* Buttons */
+  .btn {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #fff; border: none; padding: 10px 18px; border-radius: 8px;
+    font-size: 13.5px; font-weight: 600; cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.1s;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,180,216,0.35); }
+  .btn.secondary { background: var(--bg-panel); border: 1px solid var(--border); color: var(--text); }
+  .btn.warn { background: linear-gradient(135deg, var(--accent2), #c2410c); }
+  /* Chart container */
+  .chart-box { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 14px; height: 380px; position: relative; }
+  .chart-box.small { height: 300px; }
+  .chart-box.tall { height: 460px; }
+  /* Tables */
+  table.data {
+    width: 100%; border-collapse: collapse; font-size: 13px;
+  }
+  table.data th, table.data td {
+    padding: 9px 12px; text-align: left; border-bottom: 1px solid var(--border);
+  }
+  table.data th { background: var(--bg-panel); color: var(--text-dim); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  table.data tr:hover td { background: rgba(0,180,216,0.05); }
+  table.data td.num { font-family: "JetBrains Mono", "Consolas", monospace; color: var(--accent); text-align: right; }
+  /* Pills */
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+  .pill.green { background: rgba(34,197,94,0.15); color: #4ade80; }
+  .pill.amber { background: rgba(245,158,11,0.15); color: #fbbf24; }
+  .pill.red { background: rgba(239,68,68,0.15); color: #f87171; }
+  .pill.blue { background: rgba(0,180,216,0.15); color: #38bdf8; }
+  .pill.gray { background: rgba(148,163,184,0.15); color: #cbd5e1; }
+  /* Callouts */
+  .callout {
+    border-left: 3px solid var(--info); background: rgba(129,140,248,0.08);
+    padding: 14px 16px; border-radius: 0 8px 8px 0; margin: 16px 0;
+    font-size: 13.5px; color: #c7d2fe;
+  }
+  .callout.warn { border-color: var(--warn); background: rgba(245,158,11,0.08); color: #fde68a; }
+  .callout.danger { border-color: var(--danger); background: rgba(239,68,68,0.08); color: #fecaca; }
+  .callout.success { border-color: var(--success); background: rgba(34,197,94,0.08); color: #bbf7d0; }
+  .callout strong { color: #fff; }
+  /* Equation */
+  .equation {
+    background: var(--bg); border: 1px solid var(--border);
+    padding: 14px 18px; border-radius: 8px; text-align: center;
+    font-family: "Cambria Math", "Times New Roman", serif; font-size: 17px;
+    color: var(--accent); margin: 14px 0;
+  }
+  /* Search input */
+  .search-wrap { position: relative; margin-bottom: 14px; }
+  .search-wrap input {
+    width: 100%; padding: 10px 14px 10px 36px;
+    background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    border-radius: 8px; font-size: 13.5px;
+  }
+  .search-wrap::before {
+    content: "🔍"; position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+    font-size: 13px;
+  }
+  .filter-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .filter-chips .chip {
+    background: var(--bg); border: 1px solid var(--border); color: var(--text-dim);
+    padding: 5px 12px; border-radius: 14px; font-size: 11.5px; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .filter-chips .chip:hover { border-color: var(--primary); color: var(--text); }
+  .filter-chips .chip.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+  /* footer */
+  footer { text-align: center; color: var(--text-dim); font-size: 12px; padding: 30px 0; border-top: 1px solid var(--border); }
+  /* Hide print */
+  @media print { nav.sidebar, header.topbar::before { display: none; } }
+  /* small helper */
+  .small { font-size: 11.5px; color: var(--text-dim); }
+  .mono { font-family: "JetBrains Mono", "Consolas", monospace; }
+  .nowrap { white-space: nowrap; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600;
+    background: rgba(0,180,216,0.12); color: var(--primary);
+    border: 1px solid rgba(0,180,216,0.25);
+  }
+  /* progress / slider style */
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--accent); cursor: pointer;
+    box-shadow: 0 0 0 3px rgba(251,191,36,0.25);
+  }
+  .legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <h1>Simulador LIG/CuO-NPs/CS <span class="tag">v1.0 · WEB</span></h1>
+  <div class="subtitle">Plataforma interativa de simulação computacional e análise de confiabilidade para o sensor enzima-livre de glicose no suor baseado em grafeno induzido por laser, nanopartículas de CuO e quitosana.</div>
+  <div class="meta">
+    <span>Artigo: Bosenbecker et al. — UDESC/Joinville</span>
+    <span>Técnicas: CV · SWV · XPS · TEM</span>
+    <span>Faixa: 0,032–0,250 mM</span>
+    <span>Pico anódico: ≈ −0,13 V</span>
+  </div>
+</header>
+
+<div class="layout">
+
+<nav class="sidebar" id="sidebar">
+  <h3>Navegação</h3>
+  <a href="#overview"><span class="num">0</span>Visão geral</a>
+  <a href="#sim1"><span class="num">1</span>Resposta eletroquímica</a>
+  <a href="#sim2"><span class="num">2</span>Curva de calibração</a>
+  <a href="#sim3"><span class="num">3</span>Monte Carlo</a>
+  <a href="#bland"><span class="num">4</span>Bland–Altman</a>
+  <a href="#reliab"><span class="num">5</span>Confiabilidade</a>
+  <a href="#database"><span class="num">6</span>Banco de biossensores</a>
+  <a href="#gaps"><span class="num">7</span>Lacunas &amp; propostas</a>
+  <a href="#refs"><span class="num">8</span>Referências</a>
+</nav>
+
+<main>
+
+<!-- ============== OVERVIEW ============== -->
+<section id="overview">
+  <h2><span class="num">0</span>Visão geral do sensor</h2>
+  <p class="lead">Os parâmetros abaixo foram extraídos diretamente do artigo científico. Eles alimentam todas as simulações subsequentes e servem de ponto de partida para os modelos computacionais.</p>
+
+  <div class="stat-grid">
+    <div class="stat"><div class="label">Analito</div><div class="value">Glicose<span class="unit">no suor</span></div><div class="sub">Faixa fisiológica baixa</div></div>
+    <div class="stat"><div class="label">Faixa linear (voltamogramas)</div><div class="value">0,032–0,250<span class="unit">mM</span></div><div class="sub">8 concentrações</div></div>
+    <div class="stat"><div class="label">Potencial de pico</div><div class="value">−0,13<span class="unit">V</span></div><div class="sub">Pico anódico (SWV)</div></div>
+    <div class="stat"><div class="label">Amplitude SWV</div><div class="value">0,025<span class="unit">V</span></div><div class="sub">Pulso quadrado</div></div>
+    <div class="stat"><div class="label">Biorreceptor</div><div class="value">CuO-NPs<span class="unit">+ quitosana</span></div><div class="sub">Enzima-free</div></div>
+    <div class="stat"><div class="label">Substrato</div><div class="value">LIG<span class="unit">/polimida</span></div><div class="sub">Laser 455 nm · 1,5 W</div></div>
+    <div class="stat"><div class="label">XPS — Carbono</div><div class="value">64,37<span class="unit">% (após)</span></div><div class="sub">Era 90,75% (controle)</div></div>
+    <div class="stat"><div class="label">XPS — Oxigênio</div><div class="value">25,03<span class="unit">% (após)</span></div><div class="sub">Era 8,15% (controle)</div></div>
+    <div class="stat"><div class="label">Bland–Altman — viés</div><div class="value">−0,002<span class="unit">mM</span></div><div class="sub">CV vs SWV</div></div>
+    <div class="stat"><div class="label">Nº de eletrodos</div><div class="value">3<span class="unit">sistema</span></div><div class="sub">W/C/R integrados</div></div>
+  </div>
+
+  <div class="card">
+    <h3><span class="ico">▸</span>Arquitetura do sensor LIG/CuO-NPs/CS</h3>
+    <div class="grid-2">
+      <div>
+        <p style="margin-bottom:12px;color:var(--text-dim);font-size:13.5px;">A plataforma combina três componentes funcionais cuja sinergia define o desempenho analítico:</p>
+        <table class="data">
+          <tr><th>Camada</th><th>Função</th><th>Origem</th></tr>
+          <tr><td><strong>LIG</strong> (grafeno induzido por laser)</td><td>Conduividade elétrica, área ativa 3D porosa, flexibilidade</td><td>Polimida + laser 455 nm</td></tr>
+          <tr><td><strong>CuO-NPs</strong> (&lt; 50 nm)</td><td>Eletrocatalisador do par Cu(II)/Cu(III) para oxidação não enzimática</td><td>Sigma-Aldrich, drop-casting</td></tr>
+          <tr><td><strong>Quitosana</strong> (1% m/v)</td><td>Estabilização, ancoragem das NPs, hidrofilicidade, biocompatibilidade</td><td>Solução ácido acético 2,35%</td></tr>
+        </table>
+      </div>
+      <div>
+        <p style="margin-bottom:12px;color:var(--text-dim);font-size:13.5px;">Geometria dos eletrodos (sistema integrado de três eletrodos sobre LIG):</p>
+        <table class="data">
+          <tr><th>Eletrodo</th><th>Função</th><th>Área (mm²)</th></tr>
+          <tr><td>Trabalho (W)</td><td>Onde ocorre a oxidação da glicose</td><td class="num">15,2</td></tr>
+          <tr><td>Auxiliar (C)</td><td>Fecha o circuito</td><td class="num">16,6</td></tr>
+          <tr><td>Referência (R)</td><td>Define o potencial aplicado</td><td class="num">3,8</td></tr>
+        </table>
+        <div class="callout" style="margin-top:14px;">
+          <strong>Mecanismo catalítico:</strong> Cu(II) ⇌ Cu(III) na superfície do CuO. A espécie Cu(III), gerada eletroquimicamente, oxida a glicose a gluconolactona/ácido glucônico e regenera Cu(II), fechando o ciclo. Pico anódico em ≈ −0,13 V.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout warn">
+    <strong>Aviso metodológico:</strong> as curvas e parâmetros exibidos neste simulador combinam (i) <strong>valores extraídos do artigo</strong> (potencial de pico, faixa de concentração, amplitude SWV, XPS) e (ii) <strong>modelos sintéticos</strong> baseados em literatura de sensores LIG/CuO. Os pontos de calibração não são dados brutos do potenciostato PalmSens4 — o artigo não os disponibiliza. Use o simulador como ferramenta de análise exploratória, não como validação experimental.
+  </div>
+</section>
+
+<!-- ============== SIM 1: ELECTROCHEMICAL RESPONSE ============== -->
+<section id="sim1">
+  <h2><span class="num">1</span>Simulação 1 — Resposta eletroquímica</h2>
+  <p class="lead">Reprodução qualitativa dos voltamogramas do artigo. O modelo simula a corrente em função do potencial aplicado, parametrizado pela concentração de glicose e pela cinética catalítica do par Cu(II)/Cu(III). Ajuste os controles para explorar o comportamento do sensor em diferentes cenários.</p>
+
+  <div class="card">
+    <h3><span class="ico">▸</span>Controles da simulação</h3>
+    <div class="controls">
+      <div class="row">
+        <div class="ctrl">
+          <label>Técnica <span class="v" id="s1-tech-v">SWV</span></label>
+          <select id="s1-tech">
+            <option value="swv" selected>Voltametria de onda quadrada (SWV)</option>
+            <option value="cv">Voltametria cíclica (CV)</option>
+          </select>
+          <div class="hint">Amplitude SWV: 0,025 V · CV: varredura linear</div>
+        </div>
+        <div class="ctrl">
+          <label>Concentração de glicose <span class="v"><span id="s1-conc-v">0,120</span> mM</span></label>
+          <input type="range" id="s1-conc" min="0.032" max="0.250" step="0.001" value="0.120">
+          <div class="hint">Faixa do artigo: 0,032 a 0,250 mM</div>
+        </div>
+        <div class="ctrl">
+          <label>Constante catalítica k<sub>cat</sub> <span class="v"><span id="s1-kcat-v">0,85</span></span></label>
+          <input type="range" id="s1-kcat" min="0.2" max="2.0" step="0.05" value="0.85">
+          <div class="hint">Reflete atividade do CuO-NPs (adimensional)</div>
+        </div>
+        <div class="ctrl">
+          <label>Ruído instrumental (σ) <span class="v"><span id="s1-noise-v">0,8</span> µA</span></label>
+          <input type="range" id="s1-noise" min="0" max="3" step="0.05" value="0.8">
+          <div class="hint">Inclui ruído do potenciostato + capacitância</div>
+        </div>
+        <div class="ctrl">
+          <label>Deriva de baseline <span class="v"><span id="s1-drift-v">0,4</span> µA/V</span></label>
+          <input type="range" id="s1-drift" min="0" max="2" step="0.05" value="0.4">
+          <div class="hint">Inclinação do baseline</div>
+        </div>
+        <div class="ctrl">
+          <label>Posição do pico (E<sub>p</sub>) <span class="v"><span id="s1-ep-v">−0,13</span> V</span></label>
+          <input type="range" id="s1-ep" min="-0.25" max="-0.05" step="0.005" value="-0.13">
+          <div class="hint">Artigo: ≈ −0,13 V</div>
+        </div>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn" onclick="sim1Redraw()">↻ Recalcular</button>
+        <button class="btn secondary" onclick="sim1ToggleOverlay()">Comparar 3 concentrações</button>
+        <span class="badge" id="s1-peak-badge">I<sub>p</sub> = — µA</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card" style="margin-bottom:0;">
+      <h3><span class="ico">▸</span>Voltamograma I vs E</h3>
+      <div class="chart-box tall"><canvas id="sim1Chart"></canvas></div>
+      <p class="small" style="margin-top:10px;">Eixo X: potencial (V) · Eixo Y: corrente (µA). Pico anódico associado à oxidação eletrocatalítica da glicose via Cu(II)/Cu(III).</p>
+    </div>
+    <div class="card" style="margin-bottom:0;">
+      <h3><span class="ico">▸</span>Análise do pico</h3>
+      <div class="stat-grid" style="grid-template-columns:1fr 1fr;">
+        <div class="stat"><div class="label">Corrente de pico (I<sub>p</sub>)</div><div class="value" id="s1-ip">—<span class="unit">µA</span></div></div>
+        <div class="stat"><div class="label">Potencial de pico</div><div class="value" id="s1-ep-out">—<span class="unit">V</span></div></div>
+        <div class="stat"><div class="label">Largura a meia altura</div><div class="value" id="s1-fwhm">—<span class="unit">V</span></div></div>
+        <div class="stat"><div class="label">S/R (corrente/ruído)</div><div class="value" id="s1-snr">—</div></div>
+      </div>
+      <div class="callout">
+        <strong>Interpretação:</strong> o pico em ≈ −0,13 V é consistente com o artigo e com a literatura de sensores LIG/CuO. À medida que a concentração aumenta, a corrente de pico cresce proporcionalmente, indicando controle cinético de superfície. <span id="s1-interp">—</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== SIM 2: CALIBRATION ============== -->
+<section id="sim2">
+  <h2><span class="num">2</span>Simulação 2 — Curva de calibração</h2>
+  <p class="lead">Ajuste linear da corrente de pico em função da concentração de glicose. A simulação retorna sensibilidade, coeficiente de determinação (R²), limite de detecção (LOD) e limite de quantificação (LOQ), bem como a análise de resíduos. Use os controles para introduzir dispersão e avaliar a robustez da calibração.</p>
+
+  <div class="card">
+    <h3><span class="ico">▸</span>Modelo e parâmetros ajustáveis</h3>
+    <div class="equation">I(C) = I<sub>0</sub> + S · C + ε ,&nbsp;&nbsp; ε ~ N(0, σ²) &nbsp;&nbsp;|&nbsp;&nbsp; LOD = 3,3·σ/S ·&nbsp; LOQ = 10·σ/S</div>
+    <div class="controls">
+      <div class="row">
+        <div class="ctrl">
+          <label>Sensibilidade nominal (S) <span class="v"><span id="s2-sens-v">1.200</span> µA/mM</span></label>
+          <input type="range" id="s2-sens" min="400" max="2500" step="20" value="1200">
+          <div class="hint">Estimativa preliminar baseada em literatura LIG/CuO</div>
+        </div>
+        <div class="ctrl">
+          <label>Baseline (I<sub>0</sub>) <span class="v"><span id="s2-i0-v">280</span> µA</span></label>
+          <input type="range" id="s2-i0" min="100" max="600" step="10" value="280">
+          <div class="hint">Corrente na ausência de glicose</div>
+        </div>
+        <div class="ctrl">
+          <label>σ do ruído <span class="v"><span id="s2-noise-v">15</span> µA</span></label>
+          <input type="range" id="s2-noise" min="2" max="60" step="1" value="15">
+          <div class="hint">Incerteza instrumental + replicatas</div>
+        </div>
+        <div class="ctrl">
+          <label>Nº de replicatas/concentração <span class="v"><span id="s2-rep-v">3</span></span></label>
+          <input type="range" id="s2-rep" min="1" max="8" step="1" value="3">
+          <div class="hint">Replicatas independentes por padrão</div>
+        </div>
+        <div class="ctrl">
+          <label>Viés entre eletrodos <span class="v"><span id="s2-bias-v">0</span> %</span></label>
+          <input type="range" id="s2-bias" min="0" max="20" step="0.5" value="0">
+          <div class="hint">Variabilidade entre sensores</div>
+        </div>
+        <div class="ctrl">
+          <label>Modelo de regressão</label>
+          <select id="s2-model">
+            <option value="lin" selected>Linear (1ª ordem)</option>
+            <option value="quad">Quadrático (2ª ordem)</option>
+          </select>
+          <div class="hint">Linear é o padrão em SWV</div>
+        </div>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn" onclick="sim2Redraw()">↻ Recalcular</button>
+        <button class="btn secondary" onclick="sim2Export()">⤓ Exportar pontos (CSV)</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat"><div class="label">Sensibilidade (S)</div><div class="value" id="s2-sens-out">—<span class="unit">µA/mM</span></div><div class="sub">inclinação da reta</div></div>
+    <div class="stat"><div class="label">R²</div><div class="value" id="s2-r2">—</div><div class="sub">Coef. determinação</div></div>
+    <div class="stat"><div class="label">LOD</div><div class="value" id="s2-lod">—<span class="unit">mM</span></div><div class="sub">3,3σ/S</div></div>
+    <div class="stat"><div class="label">LOQ</div><div class="value" id="s2-loq">—<span class="unit">mM</span></div><div class="sub">10σ/S</div></div>
+    <div class="stat"><div class="label">Faixa linear</div><div class="value" id="s2-range">—<span class="unit">mM</span></div><div class="sub">Faixa útil</div></div>
+    <div class="stat"><div class="label">Resíduo máx.</div><div class="value" id="s2-resmax">—<span class="unit">µA</span></div><div class="sub">Maior desvio</div></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card" style="margin-bottom:0;">
+      <h3><span class="ico">▸</span>Calibração I<sub>p</sub> vs C</h3>
+      <div class="chart-box tall"><canvas id="sim2Chart"></canvas></div>
+    </div>
+    <div class="card" style="margin-bottom:0;">
+      <h3><span class="ico">▸</span>Análise de resíduos</h3>
+      <div class="chart-box tall"><canvas id="sim2Resid"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><span class="ico">▸</span>Pontos de calibração (sintéticos)</h3>
+    <div style="overflow-x:auto;">
+      <table class="data" id="s2-table">
+        <thead><tr><th>C (mM)</th><th>I médio (µA)</th><th>σ (µA)</th><th>CV (%)</th><th>n</th><th>I predito (µA)</th><th>Resíduo (µA)</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="small" style="margin-top:8px;">CV% = coeficiente de variação intra-concentração. Valores &lt; 5% indicam boa repetibilidade.</p>
+  </div>
+</section>
+
+<!-- ============== SIM 3: MONTE CARLO ============== -->
+<section id="sim3">
+  <h2><span class="num">3</span>Simulação 3 — Monte Carlo</h2>
+  <p class="lead">Análise de incerteza por propagação estatística. O modelo amostra ruído, viés entre eletrodos e derivas instrumentais e calcula a distribuição resultante da concentração estimada — permitindo avaliar a robustez do sensor frente a fontes reais de variabilidade.</p>
+
+  <div class="card">
+    <h3><span class="ico">▸</span>Configuração do Monte Carlo</h3>
+    <div class="controls">
+      <div class="row">
+        <div class="ctrl">
+          <label>Concentração verdadeira (C<sub>true</sub>) <span class="v"><span id="s3-ctrue-v">0,120</span> mM</span></label>
+          <input type="range" id="s3-ctrue" min="0.032" max="0.250" step="0.001" value="0.120">
+        </div>
+        <div class="ctrl">
+          <label>Nº de iterações <span class="v"><span id="s3-n-v">2.000</span></span></label>
+          <input type="range" id="s3-n" min="200" max="10000" step="100" value="2000">
+        </div>
+        <div class="ctrl">
+          <label>σ do ruído (corrente) <span class="v"><span id="s3-noise-v">15</span> µA</span></label>
+          <input type="range" id="s3-noise" min="2" max="60" step="1" value="15">
+        </div>
+        <div class="ctrl">
+          <label>Viés entre eletrodos (σ<sub>elec</sub>) <span class="v"><span id="s3-elec-v">3</span> %</span></label>
+          <input type="range" id="s3-elec" min="0" max="20" step="0.5" value="3">
+        </div>
+        <div class="ctrl">
+          <label>Deriva temporal <span class="v"><span id="s3-drift-v">2</span> %</span></label>
+          <input type="range" id="s3-drift" min="0" max="10" step="0.1" value="2">
+        </div>
+        <div class="ctrl">
+          <label>Sensibilidade (S) <span class="v"><span id="s3-sens-v">1.200</span> µA/mM</span></label>
+          <input type="range" id="s3-sens" min="400" max="2500" step="20" value="1200">
+        </div>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <button class="btn warn" onclick="sim3Run()">▶ Executar Monte Carlo</button>
+        <span class="badge" id="s3-progress">pronto</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat"><div class="label">Média (C estimada)</div><div class="value" id="s3-mean">—<span class="unit">mM</span></div></div>
+    <div class="stat"><div class="label">Viés</div><div class="value" id="s3-bias">—<span class="unit">mM</span></div><div class="sub">Média − C<sub>true</sub></div></div>
+    <div class="stat"><div class="label">σ (incerteza)</div><div class="value" id="s3-sd">—<span class="unit">mM</span></div></div>
+    <div class="stat"><div class="label">Incerteza expandida (U, k=2)</div><div class="value" id="s3-u">—<span class="unit">mM</span></div><div class="sub">~95% de confiança</div></div>
+    <div class="stat"><div class="label">IC 95% (lim. inf.)</div><div class="value" id="s3-lo">—<span class="unit">mM</span></div></div>
+    <div class="stat"><div class="label">IC 95% (lim. sup.)</div><div class="value" id="s3-hi">—<span class="unit">mM</span></div></div>
+    <div class="stat"><div class="label">Cobertura (erro &lt; 5%)</div><div class="value" id="s3-cov">—<span class="unit">%</span></div><div class="sub">fração dentro da tolerância</div></div>
+    <div class="stat"><div class="label">RMSE</div><div class="value" id="s3-rmse">—<span class="unit">mM</span></div></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card" style="margin-bottom:0;">
+      <h3><span class="ico">▸</span>Distribuição de C estimada</h3>
+      <div class="chart-box tall"><canvas id="sim3Hist"></canvas></div>
+      <p class="small" style="margin-top:8px;">Histograma das concentrações estimadas. Linha tracejada: valor verdadeiro. Linhas contínuas: IC 95%.</p>
+    </div>
+    <div class="card" style="margin-bottom:0;">
+      <h3><span class="ico">▸</span>Contribuição das fontes de incerteza</h3>
+      <div class="chart-box tall"><canvas id="sim3Contrib"></canvas></div>
+      <p class="small" style="margin-top:8px;">Variância relativa de cada fonte (σ²/S²), evidenciando onde concentrar esforços de otimização.</p>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>Equação de propagação usada:</strong>
+    <span class="mono">σ²<sub>C</sub> = (σ²<sub>ruído</sub> + (S·C·σ<sub>drift</sub>)² + (S·C·σ<sub>elec</sub>)²) / S²</span>.
+    O viés entre eletrodos — diretamente ligado à distribuição irregular das CuO-NPs observada por TEM (Fig. 3 do artigo) — tipicamente domina o orçamento de incerteza quando σ<sub>elec</sub> &gt; 5%.
+  </div>
+</section>
+
+<!-- ============== BLAND-ALTMAN ============== -->
+<section id="bland">
+  <h2><span class="num">4</span>Análise Bland–Altman</h2>
+  <p class="lead">Avaliação da concordância entre duas técnicas (CV vs SWV) para a mesma amostra. O artigo relata viés próximo de −0,002 mM; aqui pode-se explorar como o número de observações e a dispersão afetam os limites de concordância e a interpretação clínica.</p>
+
+  <div class="card">
+    <h3><span class="ico">▸</span>Parâmetros</h3>
+    <div class="controls">
+      <div class="row">
+        <div class="ctrl">
+          <label>Nº de observações (n) <span class="v"><span id="ba-n-v">30</span></span></label>
+          <input type="range" id="ba-n" min="5" max="200" step="1" value="30">
+        </div>
+        <div class="ctrl">
+          <label>Viés (médio CV−SWV) <span class="v"><span id="ba-bias-v">−0,002</span> mM</span></label>
+          <input type="range" id="ba-bias" min="-0.03" max="0.03" step="0.0005" value="-0.002">
+        </div>
+        <div class="ctrl">
+          <label>σ das diferenças <span class="v"><span id="ba-sd-v">0,008</span> mM</span></label>
+          <input type="range" id="ba-sd" min="0.001" max="0.05" step="0.0005" value="0.008">
+        </div>
+        <div class="ctrl">
+          <label>Tolerância clínica (δ) <span class="v"><span id="ba-tol-v">0,020</span> mM</span></label>
+          <input type="range" id="ba-tol" min="0.005" max="0.05" step="0.0005" value="0.020">
+        </div>
+      </div>
+      <button class="btn" onclick="baRedraw()">↻ Recalcular</button>
+    </div>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat"><div class="label">Viés (d̄)</div><div class="value" id="ba-bias-out">—<span class="unit">mM</span></div></div>
+    <div class="stat"><div class="label">Limite superior (+1,96σ)</div><div class="value" id="ba-up">—<span class="unit">mM</span></div></div>
+    <div class="stat"><div class="label">Limite inferior (−1,96σ)</div><div class="value" id="ba-lo">—<span class="unit">mM</span></div></div>
+    <div class="stat"><div class="label">Largura da banda</div><div class="value" id="ba-w">—<span class="unit">mM</span></div></div>
+    <div class="stat"><div class="label">Fração fora da tolerância</div><div class="value" id="ba-out">—<span class="unit">%</span></div><div class="sub">alvo: &lt; 5%</div></div>
+  </div>
+
+  <div class="card">
+    <h3><span class="ico">▸</span>Bland–Altman</h3>
+    <div class="chart-box tall"><canvas id="baChart"></canvas></div>
+    <p class="small" style="margin-top:8px;">Eixo X: média das duas medidas (mM) · Eixo Y: diferença (mM). Linha central: viés. Linhas tracejadas: limites de concordância (±1,96σ). Faixa verde: tolerância clínica aceitável.</p>
+  </div>
+
+  <div class="callout warn">
+    <strong>Interpretação crítica:</strong> o viés de ≈ −0,002 mM relatado no artigo é pequeno, mas isoladamente não comprova concordância. É necessário verificar (i) o número de observações independentes, (ii) a largura dos limites de concordância vs a tolerância clínica aceitável, (iii) a incerteza dos próprios limites (intervalos de confiança de d̄, +1,96σ e −1,96σ) e (iv) ausência de tendência sistemática em função da concentração.
+  </div>
+</section>
+
+<!-- ============== RELIABILITY ============== -->
+<section id="reliab">
+  <h2><span class="num">5</span>Indicadores de confiabilidade</h2>
+  <p class="lead">Cinco dimensões de validação recomendadas para a robustez analítica do sensor LIG/CuO-NPs/CS, com status indicativo baseado no conteúdo do artigo.</p>
+
+  <div class="grid-2">
+    <div class="card" style="margin-bottom:0;">
+      <table class="data">
+        <thead><tr><th>Indicador</th><th>O que verificar</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Linearidade (R²)</strong></td>
+            <td>A resposta acompanha a concentração na faixa de calibração</td>
+            <td><span class="pill amber">Preliminar</span></td>
+          </tr>
+          <tr>
+            <td><strong>Repetibilidade (CV%)</strong></td>
+            <td>Mesmo sensor → resultados consistentes em medições sucessivas</td>
+            <td><span class="pill red">Não reportado</span></td>
+          </tr>
+          <tr>
+            <td><strong>Reprodutibilidade</strong></td>
+            <td>Sensores diferentes → resultados equivalentes</td>
+            <td><span class="pill red">Não reportado</span></td>
+          </tr>
+          <tr>
+            <td><strong>Exatidão e recuperação</strong></td>
+            <td>Concentração estimada ↔ concentração de referência</td>
+            <td><span class="pill amber">Preliminar</span></td>
+          </tr>
+          <tr>
+            <td><strong>LOD / LOQ</strong></td>
+            <td>Menor concentração detectável / quantificável</td>
+            <td><span class="pill red">Não reportado</span></td>
+          </tr>
+          <tr>
+            <td><strong>Seletividade</strong></td>
+            <td>Resistência a interferentes (ác. úrico, ascórbico, lactato)</td>
+            <td><span class="pill red">Não reportado</span></td>
+          </tr>
+          <tr>
+            <td><strong>Estabilidade operacional</strong></td>
+            <td>Desempenho ao longo do tempo / ciclos</td>
+            <td><span class="pill red">Não reportado</span></td>
+          </tr>
+          <tr>
+            <td><strong>Validação em matriz real</strong></td>
+            <td>Suor humano (não artificial)</td>
+            <td><span class="pill red">Não reportado</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card" style="margin-bottom:0;">
+      <h3><span class="ico">▸</span>Análise radar — cobertura por dimensão</h3>
+      <div class="chart-box tall"><canvas id="reliabRadar"></canvas></div>
+      <p class="small" style="margin-top:8px;">Escala 0–100% representa o nível de evidência disponível no artigo. Pontuações baixas indicam lacunas a preencher.</p>
+    </div>
+  </div>
+
+  <div class="callout danger">
+    <strong>Resumo crítico:</strong> o artigo apresenta evidência química (XPS) e estrutural (TEM) robusta da modificação superficial, mas a caracterização <strong>analítica quantitativa</strong> ainda é preliminar. Antes de inferir capacidade clínica, é imprescindível documentar repetibilidade, reprodutibilidade, LOD/LOQ e seletividade com tabelas de dados brutos, replicatas e desvios-padrão.
+  </div>
+</section>
+
+<!-- ============== DATABASE ============== -->
+<section id="database">
+  <h2><span class="num">6</span>Banco de dados de biossensores</h2>
+  <p class="lead">Base de dados curada de biossensores eletroquímicos. Cada registro associa analito, substrato, biorreceptor/nanomaterial, técnica analítica e parâmetros de desempenho. Use a busca e os filtros para explorar o espaço de projetos possíveis e identificar abordagens comparáveis ao sensor LIG/CuO-NPs/CS deste artigo.</p>
+
+  <div class="callout">
+    <strong>Como profissionalizar a base:</strong> a estrutura abaixo expande a planilha original com colunas de <em>faixa linear</em>, <em>LOD</em>, <em>sensibilidade</em>, <em>aplicação</em>, <em>status de validação</em> e <em>referência</em>. Recomenda-se manter a base em formato estruturado (CSV/JSON) e versioná-la junto com o artigo. As entradas marcadas como <span class="pill amber">Sintético</span> são estimativas e devem ser substituídas por valores verificados em laboratório.
+  </div>
+
+  <div class="card">
+    <h3><span class="ico">▸</span>Exploração interativa</h3>
+    <div class="search-wrap">
+      <input type="text" id="db-search" placeholder="Buscar por analito, substrato, biorreceptor, técnica… (ex: glicose, LIG, CuO, SWV)">
+    </div>
+    <div class="filter-chips" id="db-filters">
+      <span class="chip active" data-col="all">Todas</span>
+      <span class="chip" data-col="analito">Glicose</span>
+      <span class="chip" data-col="substrato">LIG/Grafeno</span>
+      <span class="chip" data-col="nanomat">CuO/Metal</span>
+      <span class="chip" data-col="tecnica">SWV/CV</span>
+      <span class="chip" data-col="status">Validados</span>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="data" id="db-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Analito</th>
+            <th>Substrato</th>
+            <th>Biorreceptor</th>
+            <th>Nanomaterial</th>
+            <th>Técnica</th>
+            <th>Nº Eletrodos</th>
+            <th>Faixa linear</th>
+            <th>LOD</th>
+            <th>Sensibilidade</th>
+            <th>Aplicação</th>
+            <th>Status</th>
+            <th>Referência</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+      <button class="btn secondary" onclick="dbExport()">⤓ Exportar CSV</button>
+      <span class="small" id="db-count">— registros</span>
+    </div>
+  </div>
+
+  <div class="grid-3">
+    <div class="card" style="margin-bottom:0;">
+      <h3><span class="ico">▸</span>Distribuição por técnica</h3>
+      <div class="chart-box small"><canvas id="dbChartTech"></canvas></div>
+    </div>
+    <div class="card" style="margin-bottom:0;">
+      <h3><span class="ico">▸</span>Distribuição por substrato</h3>
+      <div class="chart-box small"><canvas id="dbChartSubs"></canvas></div>
+    </div>
+    <div class="card" style="margin-bottom:0;">
+      <h3><span class="ico">▸</span>Distribuição por analito</h3>
+      <div class="chart-box small"><canvas id="dbChartAna"></canvas></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== GAPS & PROPOSALS ============== -->
+<section id="gaps">
+  <h2><span class="num">7</span>Lacunas do artigo e propostas</h2>
+  <p class="lead">Síntese das lacunas identificadas e roteiro estruturado em três etapas para fortalecer a validação científica do sensor LIG/CuO-NPs/CS.</p>
+
+  <div class="card">
+    <h3><span class="ico">▸</span>Lacunas observadas</h3>
+    <ul style="list-style:none;padding:0;">
+      <li style="padding:10px 0;border-bottom:1px solid var(--border);">
+        <span class="pill red">1</span>&nbsp; <strong> Ausência de tabela de dados brutos</strong> — os gráficos não são acompanhados de replicatas, desvios-padrão e valores numéricos.
+      </li>
+      <li style="padding:10px 0;border-bottom:1px solid var(--border);">
+        <span class="pill red">2</span>&nbsp; <strong> Nº de sensores independentes não documentado</strong> — impossível avaliar reprodutibilidade entre eletrodos.
+      </li>
+      <li style="padding:10px 0;border-bottom:1px solid var(--border);">
+        <span class="pill amber">3</span>&nbsp; <strong> Distribuição irregular das CuO-NPs</strong> (TEM, Fig. 3) — gera diferenças de sensibilidade entre eletrodos; precisa ser quantificada.
+      </li>
+      <li style="padding:10px 0;border-bottom:1px solid var(--border);">
+        <span class="pill amber">4</span>&nbsp; <strong> Faixas de concentração incongruentes</strong> — preparação 0,25–2,0 mM vs voltamogramas 0,032–0,250 mM; conciliação metodológica necessária.
+      </li>
+      <li style="padding:10px 0;border-bottom:1px solid var(--border);">
+        <span class="pill amber">5</span>&nbsp; <strong> Parâmetros de CV incompletos</strong> — eletrólito suporte, faixa de potencial e scan rate não estão preenchidos no texto.
+      </li>
+      <li style="padding:10px 0;">
+        <span class="pill red">6</span>&nbsp; <strong> Suor artificial ≠ suor humano</strong> — não demonstra capacidade de estimar glicemia sanguínea.
+      </li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3><span class="ico">▸</span>Roteiro em três etapas</h3>
+    <div class="grid-3">
+      <div style="padding:14px;background:rgba(0,180,216,0.06);border-radius:8px;border-left:3px solid var(--primary);">
+        <div style="color:var(--primary);font-weight:700;font-size:12px;margin-bottom:6px;">ETAPA 1 — Reconstrução experimental</div>
+        <ul style="padding-left:18px;font-size:13px;line-height:1.8;">
+          <li>Extrair curvas CV e SWV (digitalização)</li>
+          <li>Documentar erros de digitalização</li>
+          <li>Identificar dados que precisam ser fornecidos pelo laboratório</li>
+          <li>Conciliar faixas 0,032–0,250 vs 0,25–2,0 mM</li>
+        </ul>
+      </div>
+      <div style="padding:14px;background:rgba(251,191,36,0.06);border-radius:8px;border-left:3px solid var(--accent);">
+        <div style="color:var(--accent);font-weight:700;font-size:12px;margin-bottom:6px;">ETAPA 2 — Simulação e estatística</div>
+        <ul style="padding-left:18px;font-size:13px;line-height:1.8;">
+          <li>Ajustar modelos de calibração (linear/quadrático)</li>
+          <li>Executar Monte Carlo com premissas explícitas</li>
+          <li>Estudar sensibilidade, ruído e incerteza</li>
+          <li>Análise de resíduos e intervalos de confiança</li>
+          <li>Bland–Altman com IC dos limites</li>
+        </ul>
+      </div>
+      <div style="padding:14px;background:rgba(34,197,94,0.06);border-radius:8px;border-left:3px solid var(--success);">
+        <div style="color:var(--success);font-weight:700;font-size:12px;margin-bottom:6px;">ETAPA 3 — Validação experimental</div>
+        <ul style="padding-left:18px;font-size:13px;line-height:1.8;">
+          <li>Confrontar projeções com medições independentes</li>
+          <li>Estimar erro, repetibilidade, reprodutibilidade</li>
+          <li>Teste de seletividade (interferentes)</li>
+          <li>Estabilidade operacional (ciclos, dias)</li>
+          <li>Validação em suor humano real</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout success" style="margin-top:16px;">
+      <strong>Recomendação:</strong> começar pela reconstrução das curvas CV e SWV + Monte Carlo. Isso permite produzir gráficos científicos, tabelas estatísticas e uma seção adicional de análise de incerteza, deixando claramente separados dados observados, digitalizados e sintéticos.
+    </div>
+  </div>
+
+  <div class="callout warn">
+    <strong>Pergunta-chave para definir a profundidade:</strong> vocês possuem os arquivos originais do potenciostato PalmSens4 (corrente × potencial e concentração)? Com eles, é possível realizar avaliação quantitativa muito mais defensável. Sem eles, ainda é possível fazer análise exploratória e simulações, mas a confiabilidade experimental não pode ser comprovada apenas pelos gráficos.
+  </div>
+</section>
+
+<!-- ============== REFERENCES ============== -->
+<section id="refs">
+  <h2><span class="num">8</span>Referências do artigo</h2>
+  <p class="lead">Bibliografia utilizada no artigo Bosenbecker et al. e que fundamenta os modelos adotados neste simulador.</p>
+  <div class="card">
+    <ol style="padding-left:22px;font-size:13px;line-height:1.9;color:var(--text-dim);">
+      <li>Genitsaridi et al. 11th edition of the IDF Diabetes Atlas. <em>Lancet Diabetes Endocrinol</em>, 2025;14:149–156.</li>
+      <li>Wang M et al. Wearable Electrochemical Glucose Sensors for Fluid Monitoring. <em>Biosensors</em>, 2025;15:309.</li>
+      <li>Zafar H et al. Comprehensive Review on Wearable Sweat-Glucose Sensors. <em>Sensors</em>, 2022;22:638.</li>
+      <li>Kim T, Pak JJ. Non-enzymatic flexible glucose sensor using Cu-NPs/LIG fiber. <em>Sensors</em>, 2025;25:2341.</li>
+      <li>Zhang Y et al. One-step laser-induced Cu-embedded graphene. <em>J Alloys Compd</em>, 2024;992:174563.</li>
+      <li>Setti M et al. Cork-derived LIG non-enzymatic glucose detection in urine. <em>Sens Actuators B</em>, 2025;430:137352.</li>
+      <li>Zhu J et al. LIG non-enzymatic glucose sensors for on-body measurements. <em>Biosens Bioelectron</em>, 2021;193:113606.</li>
+      <li>Du D et al. Chitosan–gold nanoparticles interface. <em>J Electroanal Chem</em>, 2007;605:53–60.</li>
+      <li>Apetrei IM, Apetrei C. Tyrosinase/PtNPs/Chitosan/Graphene biosensor. <em>Materials</em>, 2019;12:1009.</li>
+      <li>Chen Y et al. Wearable non-enzymatic glucose sensor in sweat. <em>Talanta</em>, 2024;278:126499.</li>
+      <li>Yousefizad M et al. CNT@NH₂/Cu-Ni carbon fiber patches. <em>Results Eng</em>, 2025;28:107732.</li>
+      <li>Noura Z et al. Microfluidic electrochemical integrated device for glucose in natural sweat. <em>Sensors</em>, 2022;22:8971.</li>
+    </ol>
+  </div>
+</section>
+
+
+<footer>
+  Simulador LIG/CuO-NPs/CS · baseado em Bosenbecker, Holdefer, Naidek &amp; Bertemes-Filho (UDESC) · ferramenta de análise exploratória — não substitui validação experimental.
+</footer>
+
+</main>
+</div>
+
+<script>
+/* Global chart defaults */
+Chart.defaults.color = "#94a3b8";
+Chart.defaults.borderColor = "rgba(148, 163, 184, 0.12)";
+Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+Chart.defaults.font.size = 11.5;
+if (window.ChartAnnotation) Chart.register(window.ChartAnnotation);
+
+/* Sidebar active link on scroll */
+const links = document.querySelectorAll('nav.sidebar a');
+const sections = document.querySelectorAll('section[id]');
+const obs = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const id = e.target.id;
+      links.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + id));
+    }
+  });
+}, { rootMargin: '-30% 0px -60% 0px' });
+sections.forEach(s => obs.observe(s));
+
+/* ============ UTILITIES ============ */
+function randn() { // Box-Muller
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+function linspace(a, b, n) {
+  const arr = []; const step = (b - a) / (n - 1);
+  for (let i = 0; i < n; i++) arr.push(a + step * i);
+  return arr;
+}
+function mean(a) { return a.reduce((x, y) => x + y, 0) / a.length; }
+function sd(a) { const m = mean(a); return Math.sqrt(a.reduce((s, x) => s + (x - m) ** 2, 0) / (a.length - 1)); }
+function linreg(xs, ys) {
+  const n = xs.length;
+  const mx = mean(xs), my = mean(ys);
+  let sxx = 0, sxy = 0;
+  for (let i = 0; i < n; i++) { sxx += (xs[i] - mx) ** 2; sxy += (xs[i] - mx) * (ys[i] - my); }
+  const slope = sxy / sxx;
+  const intercept = my - slope * mx;
+  const yhat = xs.map(x => slope * x + intercept);
+  const ssRes = ys.reduce((s, y, i) => s + (y - yhat[i]) ** 2, 0);
+  const ssTot = ys.reduce((s, y) => s + (y - my) ** 2, 0);
+  const r2 = 1 - ssRes / ssTot;
+  const se = Math.sqrt(ssRes / (n - 2));
+  const slopeSE = se / Math.sqrt(sxx);
+  return { slope, intercept, r2, se, slopeSE, yhat };
+}
+function fmt(x, d = 3) { return Number(x).toFixed(d); }
+
+/* ============================================================
+   SIMULAÇÃO 1 — Resposta eletroquímica
+   ============================================================ */
+let sim1ChartObj = null;
+let sim1Overlay = false;
+
+function sim1Redraw() {
+  // read controls
+  const tech = document.getElementById('s1-tech').value;
+  const conc = parseFloat(document.getElementById('s1-conc').value);
+  const kcat = parseFloat(document.getElementById('s1-kcat').value);
+  const noise = parseFloat(document.getElementById('s1-noise').value);
+  const drift = parseFloat(document.getElementById('s1-drift').value);
+  const ep = parseFloat(document.getElementById('s1-ep').value);
+
+  document.getElementById('s1-conc-v').textContent = fmt(conc, 3);
+  document.getElementById('s1-kcat-v').textContent = fmt(kcat, 2);
+  document.getElementById('s1-noise-v').textContent = fmt(noise, 2);
+  document.getElementById('s1-drift-v').textContent = fmt(drift, 2);
+  document.getElementById('s1-ep-v').textContent = (ep >= 0 ? '+' : '−') + Math.abs(ep).toFixed(2);
+  document.getElementById('s1-tech-v').textContent = tech.toUpperCase();
+
+  // potential range
+  const E = linspace(-0.4, 0.6, 220);
+
+  function peakShape(Ep, amp, fwhm) {
+    // gaussian-ish peak
+    return E.map(e => amp * Math.exp(-((e - Ep) ** 2) / (2 * (fwhm / 2.355) ** 2)));
+  }
+
+  function buildCurve(c, color, label) {
+    // peak amplitude ~ sensitivity * concentration * kcat (with saturation)
+    const sat = 1 - Math.exp(-c / 0.10);
+    const peakAmp = 80 + 1800 * sat * kcat * (c / 0.25);
+    // SWV: sharper peak; CV: broader, asymmetric
+    const fwhm = tech === 'swv' ? 0.045 : 0.09;
+    let base = drift; // slope per V
+    const y = E.map((e, i) => {
+      let val = base * (e + 0.4) + 60;
+      // catalytic peak (anodic, around ep)
+      val += peakShape(ep, peakAmp, fwhm)[i];
+      // small secondary faradaic feature at +0.4 V
+      val += peakShape(0.4, peakAmp * 0.18, 0.10)[i];
+      // noise
+      val += randn() * noise;
+      return val;
+    });
+    return { label, data: y, borderColor: color, backgroundColor: color + '22', borderWidth: 2, pointRadius: 0, tension: 0.3, fill: false };
+  }
+
+  const datasets = [];
+  if (sim1Overlay) {
+    const cols = ['#00b4d8', '#fbbf24', '#f97316'];
+    const cs = [0.032, 0.120, 0.250];
+    cs.forEach((c, i) => {
+      const sat = 1 - Math.exp(-c / 0.10);
+      const peakAmp = 80 + 1800 * sat * kcat * (c / 0.25);
+      const fwhm = tech === 'swv' ? 0.045 : 0.09;
+      const y = E.map((e, i2) => {
+        let val = drift * (e + 0.4) + 60 + peakShape(ep, peakAmp, fwhm)[i2] + peakShape(0.4, peakAmp * 0.18, 0.10)[i2];
+        val += randn() * noise;
+        return val;
+      });
+      datasets.push({
+        label: `C = ${fmt(c, 3)} mM`, data: y, borderColor: cols[i], backgroundColor: cols[i] + '22',
+        borderWidth: 2, pointRadius: 0, tension: 0.3, fill: false
+      });
+    });
+  } else {
+    datasets.push(buildCurve(conc, '#00b4d8', `C = ${fmt(conc, 3)} mM`));
+  }
+
+  // compute peak info from primary curve
+  const primaryY = datasets[0].data;
+  const peakIdx = primaryY.indexOf(Math.max(...primaryY));
+  const ip = primaryY[peakIdx];
+  const epActual = E[peakIdx];
+  // FWHM estimation
+  const halfMax = ip / 2;
+  let li = peakIdx, ri = peakIdx;
+  while (li > 0 && primaryY[li] > halfMax) li--;
+  while (ri < primaryY.length - 1 && primaryY[ri] > halfMax) ri++;
+  const fwhm = E[ri] - E[li];
+  const snr = ip / (noise > 0 ? noise : 0.1);
+
+  document.getElementById('s1-ip').innerHTML = `${fmt(ip, 1)}<span class="unit">µA</span>`;
+  document.getElementById('s1-ep-out').innerHTML = `${fmt(epActual, 3)}<span class="unit">V</span>`;
+  document.getElementById('s1-fwhm').innerHTML = `${fmt(fwhm, 3)}<span class="unit">V</span>`;
+  document.getElementById('s1-snr').textContent = fmt(snr, 1);
+  document.getElementById('s1-peak-badge').innerHTML = `I<sub>p</sub> = ${fmt(ip, 1)} µA @ ${fmt(epActual, 3)} V`;
+
+  let interp = '';
+  if (snr < 10) interp = 'Relação sinal-ruído abaixo de 10 — pico não confiável.';
+  else if (snr < 30) interp = 'S/R moderado; quantificação marginal.';
+  else if (snr < 100) interp = 'S/R adequado para quantificação semiautomática.';
+  else interp = 'S/R elevado; quantificação robusta possível.';
+  if (kcat < 0.5) interp += ' Atividade catalítica reduzida (CuO-NPs possivelmente sub-utilizados).';
+  if (drift > 1) interp += ' Deriva de baseline elevada — recomendada correção de baseline.';
+  document.getElementById('s1-interp').textContent = interp;
+
+  // build chart
+  const ctx = document.getElementById('sim1Chart').getContext('2d');
+  if (sim1ChartObj) sim1ChartObj.destroy();
+  sim1ChartObj = new Chart(ctx, {
+    type: 'line',
+    data: { labels: E.map(e => e.toFixed(3)), datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#e8eef5', font: { size: 12 } } },
+        tooltip: { callbacks: { title: (it) => 'E = ' + it[0].label + ' V', label: (it) => it.dataset.label + ': ' + fmt(it.parsed.y, 2) + ' µA' } }
+      },
+      scales: {
+        x: { title: { display: true, text: 'Potencial E (V)', color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.08)' }, ticks: { color: '#94a3b8', maxTicksLimit: 12 } },
+        y: { title: { display: true, text: 'Corrente I (µA)', color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.08)' }, ticks: { color: '#94a3b8' } }
+      }
+    }
+  });
+}
+function sim1ToggleOverlay() {
+  sim1Overlay = !sim1Overlay;
+  sim1Redraw();
+}
+
+/* ============================================================
+   SIMULAÇÃO 2 — Curva de calibração
+   ============================================================ */
+let sim2ChartObj = null, sim2ResidObj = null;
+let sim2Points = null;
+function sim2Redraw() {
+  const S = parseFloat(document.getElementById('s2-sens').value);
+  const I0 = parseFloat(document.getElementById('s2-i0').value);
+  const sigma = parseFloat(document.getElementById('s2-noise').value);
+  const rep = parseInt(document.getElementById('s2-rep').value);
+  const biasElec = parseFloat(document.getElementById('s2-bias').value);
+  const model = document.getElementById('s2-model').value;
+
+  document.getElementById('s2-sens-v').textContent = S.toLocaleString('pt-BR');
+  document.getElementById('s2-i0-v').textContent = I0;
+  document.getElementById('s2-noise-v').textContent = sigma;
+  document.getElementById('s2-rep-v').textContent = rep;
+  document.getElementById('s2-bias-v').textContent = fmt(biasElec, 1);
+
+  // 8 concentration points from article (voltammogram range)
+  const Cs = [0.032, 0.063, 0.091, 0.116, 0.143, 0.180, 0.218, 0.250];
+
+  // generate replicates with electrode bias
+  const points = Cs.map(c => {
+    const trueI = I0 + S * c;
+    const elecBias = 1 + randn() * biasElec / 100;
+    const samples = [];
+    for (let i = 0; i < rep; i++) {
+      const v = trueI * elecBias + randn() * sigma;
+      samples.push(v);
+    }
+    return { c, samples, mean: mean(samples), sd: sd(samples) || sigma * 0.3 };
+  });
+  sim2Points = points;
+
+  // regression (linear or quadratic)
+  const xs = points.flatMap(p => p.samples.map(() => p.c));
+  const ys = points.flatMap(p => p.samples);
+  let fit, pred;
+  if (model === 'lin') {
+    const r = linreg(xs, ys);
+    pred = Cs.map(c => r.slope * c + r.intercept);
+    fit = { ...r, pred };
+  } else {
+    // quadratic least squares (small system)
+    // build matrix
+    const n = xs.length;
+    let sx=0, sx2=0, sx3=0, sx4=0, sy=0, sxy=0, sx2y=0;
+    for (let i=0;i<n;i++){const x=xs[i],y=ys[i];sx+=x;sx2+=x*x;sx3+=x*x*x;sx4+=x*x*x*x;sy+=y;sxy+=x*y;sx2y+=x*x*y;}
+    // solve 3x3
+    const A=[[n,sx,sx2],[sx,sx2,sx3],[sx2,sx3,sx4]];
+    const Bv=[sy,sxy,sx2y];
+    function solve3(A,B){const a=A[0][0],b=A[0][1],c=A[0][2],d=A[1][0],e=A[1][1],f=A[1][2],g=A[2][0],h=A[2][1],i=A[2][2];const det=a*(e*i-f*h)-b*(d*i-f*g)+c*(d*h-e*g);if(Math.abs(det)<1e-9)return null;const x1=(B[0]*(e*i-f*h)-b*(B[1]*i-f*B[2])+c*(B[1]*h-e*B[2]))/det;const x2=(a*(B[1]*i-f*B[2])-B[0]*(d*i-f*g)+c*(d*B[2]-B[1]*g))/det;const x3=(a*(e*B[2]-h*B[1])-b*(d*B[2]-g*B[0])+B[0]*(d*h-e*g))/det;return[x1,x2,x3];}
+    const coef=solve3(A,Bv);
+    pred=Cs.map(c=>coef[0]+coef[1]*c+coef[2]*c*c);
+    const yhatAll=xs.map(x=>coef[0]+coef[1]*x+coef[2]*x*x);
+    const my=mean(ys);
+    const ssRes=ys.reduce((s,y,i)=>s+(y-yhatAll[i])**2,0);
+    const ssTot=ys.reduce((s,y)=>s+(y-my)**2,0);
+    fit={slope:coef[1],intercept:coef[0],r2:1-ssRes/ssTot,se:Math.sqrt(ssRes/(n-3)),slopeSE:0,pred};
+  }
+
+  // outputs
+  const residMax = Math.max(...points.map((p,i)=>Math.abs(p.mean-fit.pred[i])));
+  const LOD = 3.3 * sigma / S;
+  const LOQ = 10 * sigma / S;
+  document.getElementById('s2-sens-out').innerHTML = `${fmt(fit.slope,0)}<span class="unit">µA/mM</span>`;
+  document.getElementById('s2-r2').textContent = fit.r2.toFixed(4);
+  document.getElementById('s2-lod').innerHTML = `${fmt(LOD*1000,2)}<span class="unit">µM</span>`;
+  document.getElementById('s2-loq').innerHTML = `${fmt(LOQ*1000,1)}<span class="unit">µM</span>`;
+  document.getElementById('s2-range').innerHTML = `0,032–0,250<span class="unit">mM</span>`;
+  document.getElementById('s2-resmax').innerHTML = `${fmt(residMax,1)}<span class="unit">µA</span>`;
+
+  // chart: scatter + fit
+  const scatterData = points.flatMap(p => p.samples.map(s => ({ x: p.c, y: s })));
+  const meanData = points.map((p,i) => ({ x: p.c, y: p.mean }));
+  const fitLine = Cs.map(c => ({ x: c, y: model==='lin' ? fit.slope*c+fit.intercept : fit.pred[Cs.indexOf(c)] }));
+
+  const ctx = document.getElementById('sim2Chart').getContext('2d');
+  if (sim2ChartObj) sim2ChartObj.destroy();
+  sim2ChartObj = new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: [
+        { label: 'Replicatas', data: scatterData, backgroundColor: 'rgba(0,180,216,0.45)', borderColor: '#00b4d8', pointRadius: 3 },
+        { label: 'Média', data: meanData, backgroundColor: '#fbbf24', borderColor: '#fbbf24', pointRadius: 6, pointStyle: 'rectRot' },
+        { label: `Ajuste (${model==='lin'?'linear':'quad.'}, R²=${fit.r2.toFixed(3)})`, data: fitLine, borderColor: '#22c55e', backgroundColor: 'transparent', type: 'line', borderWidth: 2, pointRadius: 0, tension: 0 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#e8eef5' } }, tooltip: { callbacks: { label: (it)=>`${it.dataset.label}: (${fmt(it.parsed.x,3)} mM, ${fmt(it.parsed.y,1)} µA)` } } },
+      scales: {
+        x: { type: 'linear', title: { display: true, text: 'Concentração de glicose (mM)', color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.08)' }, ticks: { color: '#94a3b8' } },
+        y: { title: { display: true, text: 'Corrente de pico Iₚ (µA)', color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.08)' }, ticks: { color: '#94a3b8' } }
+      }
+    }
+  });
+
+  // residuals chart
+  const residData = points.map((p,i)=>({ x: p.c, y: p.mean - fit.pred[i] }));
+  const ctxR = document.getElementById('sim2Resid').getContext('2d');
+  if (sim2ResidObj) sim2ResidObj.destroy();
+  sim2ResidObj = new Chart(ctxR, {
+    type: 'scatter',
+    data: { datasets: [
+      { label: 'Resíduo', data: residData, backgroundColor: '#f97316', borderColor: '#f97316', pointRadius: 6, pointStyle: 'rectRot' },
+      { label: 'Zero', data: [{x:0.03,y:0},{x:0.25,y:0}], borderColor: '#94a3b8', backgroundColor: 'transparent', type: 'line', borderWidth: 1, borderDash: [6,4], pointRadius: 0 }
+    ] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#e8eef5' } } },
+      scales: {
+        x: { type: 'linear', title: { display: true, text: 'Concentração (mM)', color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.08)' }, ticks: { color: '#94a3b8' } },
+        y: { title: { display: true, text: 'Resíduo (µA)', color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.08)' }, ticks: { color: '#94a3b8' } }
+      }
+    }
+  });
+
+  // table
+  const tbody = document.querySelector('#s2-table tbody');
+  tbody.innerHTML = '';
+  points.forEach((p,i) => {
+    const cv = p.sd / p.mean * 100;
+    const resid = p.mean - fit.pred[i];
+    tbody.innerHTML += `<tr><td class="num">${fmt(p.c,3)}</td><td class="num">${fmt(p.mean,1)}</td><td class="num">${fmt(p.sd,1)}</td><td class="num">${fmt(cv,2)}</td><td>${rep}</td><td class="num">${fmt(fit.pred[i],1)}</td><td class="num" style="color:${Math.abs(resid)>2*sigma?'#f87171':'#4ade80'}">${resid>=0?'+':''}${fmt(resid,2)}</td></tr>`;
+  });
+}
+function sim2Export() {
+  if (!sim2Points) return;
+  let csv = 'C(mM),I(uA)\n';
+  sim2Points.forEach(p => p.samples.forEach(s => csv += `${p.c},${s.toFixed(3)}\n`));
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'calibracao_sintetica.csv';
+  a.click();
+}
+
+/* ============================================================
+   SIMULAÇÃO 3 — Monte Carlo
+   ============================================================ */
+let sim3HistObj = null, sim3ContribObj = null;
+function sim3Run() {
+  const Ctrue = parseFloat(document.getElementById('s3-ctrue').value);
+  const N = parseInt(document.getElementById('s3-n').value);
+  const sigma = parseFloat(document.getElementById('s3-noise').value);
+  const sigmaElec = parseFloat(document.getElementById('s3-elec').value) / 100;
+  const sigmaDrift = parseFloat(document.getElementById('s3-drift').value) / 100;
+  const S = parseFloat(document.getElementById('s3-sens').value);
+
+  document.getElementById('s3-ctrue-v').textContent = fmt(Ctrue, 3);
+  document.getElementById('s3-n-v').textContent = N.toLocaleString('pt-BR');
+  document.getElementById('s3-noise-v').textContent = sigma;
+  document.getElementById('s3-elec-v').textContent = (sigmaElec*100).toFixed(1);
+  document.getElementById('s3-drift-v').textContent = (sigmaDrift*100).toFixed(1);
+  document.getElementById('s3-sens-v').textContent = S.toLocaleString('pt-BR');
+  document.getElementById('s3-progress').textContent = 'executando…';
+
+  setTimeout(() => {
+    const Itrue = S * Ctrue;
+    const samples = [];
+    for (let i = 0; i < N; i++) {
+      // I = S*C + noise + bias_elec + drift
+      const noise = randn() * sigma;
+      const elec = randn() * Itrue * sigmaElec;
+      const drift = randn() * Itrue * sigmaDrift;
+      const Imeas = Itrue + noise + elec + drift;
+      // estimate C: invert linear model (assume I0 calibrated out)
+      const Chat = Imeas / S;
+      samples.push(Chat);
+    }
+    const m = mean(samples), s = sd(samples);
+    const U = 2 * s;
+    const lo = m - U, hi = m + U;
+    const cov = samples.filter(x => Math.abs(x - Ctrue) / Ctrue < 0.05).length / N * 100;
+    const rmse = Math.sqrt(samples.reduce((s2, x) => s2 + (x - Ctrue) ** 2, 0) / N);
+
+    document.getElementById('s3-mean').innerHTML = `${fmt(m*1000,2)}<span class="unit">µM</span>`;
+    document.getElementById('s3-bias').innerHTML = `${fmt((m-Ctrue)*1000,2)}<span class="unit">µM</span>`;
+    document.getElementById('s3-sd').innerHTML = `${fmt(s*1000,2)}<span class="unit">µM</span>`;
+    document.getElementById('s3-u').innerHTML = `${fmt(U*1000,2)}<span class="unit">µM</span>`;
+    document.getElementById('s3-lo').innerHTML = `${fmt(lo*1000,2)}<span class="unit">µM</span>`;
+    document.getElementById('s3-hi').innerHTML = `${fmt(hi*1000,2)}<span class="unit">µM</span>`;
+    document.getElementById('s3-cov').innerHTML = `${fmt(cov,1)}<span class="unit">%</span>`;
+    document.getElementById('s3-rmse').innerHTML = `${fmt(rmse*1000,2)}<span class="unit">µM</span>`;
+    document.getElementById('s3-progress').textContent = 'concluído';
+
+    // histogram
+    const nbins = 40;
+    const min = Math.min(...samples), max = Math.max(...samples);
+    const bins = Array(nbins).fill(0);
+    const bw = (max - min) / nbins;
+    samples.forEach(x => { let idx = Math.floor((x - min) / bw); if (idx >= nbins) idx = nbins - 1; if (idx < 0) idx = 0; bins[idx]++; });
+    const labels = Array(nbins).fill(0).map((_,i) => fmt((min + i*bw + bw/2)*1000, 1));
+
+    const ctxH = document.getElementById('sim3Hist').getContext('2d');
+    if (sim3HistObj) sim3HistObj.destroy();
+    sim3HistObj = new Chart(ctxH, {
+      type: 'bar',
+      data: { labels, datasets: [{ label: 'Frequência', data: bins, backgroundColor: 'rgba(0,180,216,0.6)', borderColor: '#00b4d8', borderWidth: 1 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { title: (it)=>`C ≈ ${it[0].label} µM`, label: (it)=>`${it.parsed.y} amostras` } },
+          annotation: {
+            annotations: {
+              true: { type: 'line', xMin: Ctrue*1000, xMax: Ctrue*1000, borderColor: '#fbbf24', borderWidth: 2, borderDash: [6,4], label: { content: 'C verdadeiro', display: true, color: '#fbbf24', position: 'start', font: { size: 10 } } },
+              lo: { type: 'line', xMin: lo*1000, xMax: lo*1000, borderColor: '#22c55e', borderWidth: 1.5 },
+              hi: { type: 'line', xMin: hi*1000, xMax: hi*1000, borderColor: '#22c55e', borderWidth: 1.5, label: { content: 'IC 95%', display: true, color: '#22c55e', position: 'end', font: { size: 10 } } }
+            }
+          }
+        },
+        scales: {
+          x: { title: { display: true, text: 'C estimada (µM)', color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.06)' }, ticks: { color: '#94a3b8', maxTicksLimit: 10 } },
+          y: { title: { display: true, text: 'Frequência', color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.08)' }, ticks: { color: '#94a3b8' } }
+        }
+      }
+    });
+
+    // contributions
+    const varNoise = sigma * sigma;
+    const varElec = (Itrue * sigmaElec) ** 2;
+    const varDrift = (Itrue * sigmaDrift) ** 2;
+    const total = varNoise + varElec + varDrift;
+    const contrib = [
+      { label: 'Ruído instrumental', value: varNoise / total * 100 },
+      { label: 'Viés entre eletrodos', value: varElec / total * 100 },
+      { label: 'Deriva temporal', value: varDrift / total * 100 }
+    ];
+    const ctxC = document.getElementById('sim3Contrib').getContext('2d');
+    if (sim3ContribObj) sim3ContribObj.destroy();
+    sim3ContribObj = new Chart(ctxC, {
+      type: 'bar',
+      data: { labels: contrib.map(c=>c.label), datasets: [{ label: 'Contribuição (%)', data: contrib.map(c=>c.value), backgroundColor: ['#00b4d8','#f97316','#fbbf24'], borderWidth: 0 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: (it)=>`${it.parsed.x.toFixed(1)}% da variância total` } } },
+        scales: {
+          x: { title: { display: true, text: 'Contribuição para variância (%)', color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.08)' }, ticks: { color: '#94a3b8' } },
+          y: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+        }
+      }
+    });
+  }, 30);
+}
+
+/* ============================================================
+   BLAND–ALTMAN
+   ============================================================ */
+let baChartObj = null;
+function baRedraw() {
+  const n = parseInt(document.getElementById('ba-n').value);
+  const bias = parseFloat(document.getElementById('ba-bias').value);
+  const sdVal = parseFloat(document.getElementById('ba-sd').value);
+  const tol = parseFloat(document.getElementById('ba-tol').value);
+
+  document.getElementById('ba-n-v').textContent = n;
+  document.getElementById('ba-bias-v').textContent = (bias>=0?'+':'−') + Math.abs(bias).toFixed(3);
+  document.getElementById('ba-sd-v').textContent = sdVal.toFixed(3);
+  document.getElementById('ba-tol-v').textContent = tol.toFixed(3);
+
+  // generate pairs
+  const pairs = [];
+  for (let i = 0; i < n; i++) {
+    const meanC = 0.05 + Math.random() * 0.20; // 0.05-0.25 mM
+    const diff = bias + randn() * sdVal;
+    pairs.push({ mean: meanC, diff });
+  }
+  const lo = bias - 1.96 * sdVal, up = bias + 1.96 * sdVal;
+  const outTol = pairs.filter(p => Math.abs(p.diff) > tol).length / n * 100;
+
+  document.getElementById('ba-bias-out').innerHTML = `${fmt(bias*1000,2)}<span class="unit">µM</span>`;
+  document.getElementById('ba-up').innerHTML = `${fmt(up*1000,2)}<span class="unit">µM</span>`;
+  document.getElementById('ba-lo').innerHTML = `${fmt(lo*1000,2)}<span class="unit">µM</span>`;
+  document.getElementById('ba-w').innerHTML = `${fmt((up-lo)*1000,2)}<span class="unit">µM</span>`;
+  document.getElementById('ba-out').innerHTML = `${fmt(outTol,1)}<span class="unit">%</span>`;
+
+  const ctx = document.getElementById('baChart').getContext('2d');
+  if (baChartObj) baChartObj.destroy();
+  baChartObj = new Chart(ctx, {
+    type: 'scatter',
+    data: { datasets: [
+      { label: 'Observações', data: pairs.map(p=>({x:p.mean, y:p.diff})), backgroundColor: '#00b4d8', pointRadius: 4 },
+      { label: 'Viés (d̄)', data: [{x:0.03,y:bias},{x:0.27,y:bias}], borderColor: '#fbbf24', type: 'line', borderWidth: 2, pointRadius: 0 },
+      { label: '+1,96σ', data: [{x:0.03,y:up},{x:0.27,y:up}], borderColor: '#f87171', type: 'line', borderWidth: 1.5, borderDash: [6,4], pointRadius: 0 },
+      { label: '−1,96σ', data: [{x:0.03,y:lo},{x:0.27,y:lo}], borderColor: '#f87171', type: 'line', borderWidth: 1.5, borderDash: [6,4], pointRadius: 0 },
+      { label: 'Tolerância', data: [{x:0.03,y:tol},{x:0.27,y:tol},{x:0.27,y:-tol},{x:0.03,y:-tol}], borderColor: 'rgba(34,197,94,0.4)', backgroundColor: 'rgba(34,197,94,0.10)', type: 'line', borderWidth: 1, pointRadius: 0, fill: true }
+    ] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#e8eef5', font: { size: 11 } } }, tooltip: { callbacks: { label: (it)=>`${it.dataset.label}: média=${fmt(it.parsed.x,3)} mM, Δ=${fmt(it.parsed.y,4)} mM` } } },
+      scales: {
+        x: { type: 'linear', title: { display: true, text: 'Média (CV+SWV)/2 (mM)', color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.08)' }, ticks: { color: '#94a3b8' } },
+        y: { title: { display: true, text: 'Diferença CV−SWV (mM)', color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.08)' }, ticks: { color: '#94a3b8' } }
+      }
+    }
+  });
+}
+
+/* ============================================================
+   RELIABILITY RADAR
+   ============================================================ */
+let radarObj = null;
+function drawRadar() {
+  const ctx = document.getElementById('reliabRadar').getContext('2d');
+  if (radarObj) radarObj.destroy();
+  radarObj = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: ['Linearidade', 'Repetibilidade', 'Reprodutibilidade', 'Exatidão', 'LOD/LOQ', 'Seletividade', 'Estabilidade', 'Matriz real'],
+      datasets: [
+        { label: 'Artigo atual', data: [55, 10, 0, 40, 0, 0, 10, 0], backgroundColor: 'rgba(0,180,216,0.15)', borderColor: '#00b4d8', borderWidth: 2, pointBackgroundColor: '#00b4d8' },
+        { label: 'Alvo (validação robusta)', data: [90, 90, 85, 90, 85, 80, 80, 80], backgroundColor: 'rgba(34,197,94,0.08)', borderColor: '#22c55e', borderWidth: 1.5, borderDash: [5,5], pointBackgroundColor: 'transparent' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#e8eef5' } } },
+      scales: { r: { min: 0, max: 100, ticks: { color: '#94a3b8', backdropColor: 'transparent', stepSize: 25 }, grid: { color: 'rgba(148,163,184,0.15)' }, angleLines: { color: 'rgba(148,163,184,0.2)' }, pointLabels: { color: '#e8eef5', font: { size: 11 } } } }
+    }
+  });
+}
+
+/* ============================================================
+   BANCO DE DADOS DE BIOSSENSORES
+   ============================================================ */
+const DB = [
+  { id:'BS-001', analito:'Glicose', substrato:'LIG (Kapton)', biorreceptor:'CuO-NPs', nanomat:'CuO', tecnica:'SWV', neletrodos:3, faixa:'0,032–0,250 mM', lod:'— µM', sens:'≈1200 µA/mM', aplic:'Suor artificial', status:'Preliminar', ref:'Bosenbecker et al. (artigo atual)' },
+  { id:'BS-002', analito:'Glicose', substrato:'Grafeno', biorreceptor:'Glicose oxidase', nanomat:'AuNPs', tecnica:'EIS', neletrodos:4, faixa:'0,01–1,0 mM', lod:'3 µM', sens:'— µA/mM', aplic:'Plasma', status:'Validado', ref:'Wang 2025 (Biosensors)' },
+  { id:'BS-003', analito:'Lactato', substrato:'Grafeno', biorreceptor:'Lactato oxidase', nanomat:'CuO', tecnica:'CV', neletrodos:3, faixa:'0,05–5,0 mM', lod:'10 µM', sens:'— µA/mM', aplic:'Suor', status:'Validado', ref:'Banco de dados UDESC' },
+  { id:'BS-004', analito:'Lactose', substrato:'Grafeno', biorreceptor:'Lactase', nanomat:'PtNPs', tecnica:'CV', neletrodos:3, faixa:'0,1–10 mM', lod:'50 µM', sens:'— µA/mM', aplic:'Alimentos', status:'Validado', ref:'Banco de dados UDESC' },
+  { id:'BS-005', analito:'Progesterona', substrato:'Grafeno', biorreceptor:'Aptâmero', nanomat:'AuNPs', tecnica:'EIS', neletrodos:4, faixa:'0,1–100 ng/mL', lod:'0,05 ng/mL', sens:'— Ω/dec', aplic:'Saliva', status:'Validado', ref:'Banco de dados UDESC' },
+  { id:'BS-006', analito:'Bactérias', substrato:'Grafeno', biorreceptor:'Enzima (lisozima)', nanomat:'AgNPs', tecnica:'EIS', neletrodos:4, faixa:'10²–10⁷ CFU/mL', lod:'10² CFU/mL', sens:'— Ω/dec', aplic:'Água', status:'Validado', ref:'Banco de dados UDEC' },
+  { id:'BS-007', analito:'Saxitoxina', substrato:'Grafeno', biorreceptor:'Aptâmero', nanomat:'AuNPs', tecnica:'EIS', neletrodos:4, faixa:'0,1–100 nM', lod:'0,05 nM', sens:'— Ω/dec', aplic:'Marisco', status:'Validado', ref:'Banco de dados UDESC' },
+  { id:'BS-008', analito:'Câncer de pâncreas', substrato:'Grafeno', biorreceptor:'Anticorpo', nanomat:'AuNPs', tecnica:'EIS', neletrodos:4, faixa:'1–1000 pg/mL', lod:'0,5 pg/mL', sens:'— Ω/dec', aplic:'Soro', status:'Sintético', ref:'Banco de dados UDESC' },
+  { id:'BS-009', analito:'Glicose', substrato:'LIG (fibra)', biorreceptor:'Cu-NPs', nanomat:'Cu', tecnica:'CV', neletrodos:3, faixa:'0,05–1,0 mM', lod:'5 µM', sens:'421 µA/mM·cm²', aplic:'Bebidas', status:'Validado', ref:'Kim & Pak 2025 (Sensors)' },
+  { id:'BS-010', analito:'Glicose', substrato:'LIG (cortiça)', biorreceptor:'CuO-NPs', nanomat:'CuO', tecnica:'SWV', neletrodos:3, faixa:'5–1500 µM', lod:'1,8 µM', sens:'1,02 µA/µM', aplic:'Urina', status:'Validado', ref:'Setti et al. 2025 (Sens. Actuators B)' },
+  { id:'BS-011', analito:'Glicose', substrato:'LIG (polimida)', biorreceptor:'Cu-graphene', nanomat:'Cu', tecnica:'Amperom.', neletrodos:3, faixa:'0,1–10 mM', lod:'30 µM', sens:'— µA/mM', aplic:'Pele (on-body)', status:'Validado', ref:'Zhu et al. 2021 (Biosens. Bioelectron.)' },
+  { id:'BS-012', analito:'Glicose', substrato:'Grafeno Cu-embedded', biorreceptor:'Cu-grafeno', nanomat:'Cu', tecnica:'CV', neletrodos:3, faixa:'0,1–5,0 mM', lod:'0,4 µM', sens:'235 µA/mM·cm²', aplic:'Bebidas', status:'Validado', ref:'Zhang et al. 2024 (J. Alloys Compd.)' },
+  { id:'BS-013', analito:'Glicose', substrato:'CNT@NH₂/Cu-Ni', biorreceptor:'Cu-Ni carbon', nanomat:'Cu-Ni', tecnica:'Amperom.', neletrodos:3, faixa:'0,01–1,0 mM', lod:'2 µM', sens:'— µA/mM', aplic:'Suor humano', status:'Validado', ref:'Yousefizad et al. 2025 (Results Eng.)' },
+  { id:'BS-014', analito:'Glicose', substrato:'Microfluídico Au', biorreceptor:'GOx', nanomat:'Au', tecnica:'Amperom.', neletrodos:3, faixa:'0,05–1,0 mM', lod:'5 µM', sens:'— µA/mM', aplic:'Suor natural', status:'Validado', ref:'Noura et al. 2022 (Sensors)' },
+  { id:'BS-015', analito:'Glicose', substrato:'LIG/Quitossano', biorreceptor:'PtNPs/Quitossana', nanomat:'Pt', tecnica:'CV', neletrodos:3, faixa:'0,1–8,0 mM', lod:'10 µM', sens:'— µA/mM', aplic:'Soro', status:'Validado', ref:'Apetrei 2019 (Materials)' },
+  { id:'BS-016', analito:'Glicose', substrato:'Wearable Cu-Ni', biorreceptor:'CuO-NWs', nanomat:'CuO', tecnica:'SWV', neletrodos:3, faixa:'0,01–2,0 mM', lod:'0,5 µM', sens:'— µA/mM', aplic:'Suor', status:'Validado', ref:'Chen et al. 2024 (Talanta)' },
+  { id:'BS-017', analito:'Acetilcolina', substrato:'Grafeno', biorreceptor:'AChE', nanomat:'AuNPs/Quitossana', tecnica:'Amperom.', neletrodos:3, faixa:'1–500 µM', lod:'0,4 µM', sens:'— µA/mM', aplic:'Bioanálise', status:'Validado', ref:'Du et al. 2007 (J. Electroanal. Chem.)' },
+  { id:'BS-018', analito:'Tirosina', substrato:'Grafeno', biorreceptor:'Tirosinase', nanomat:'PtNPs/Quitossana', tecnica:'CV', neletrodos:3, faixa:'0,5–50 µM', lod:'0,1 µM', sens:'— µA/mM', aplic:'Bioanálise', status:'Validado', ref:'Apetrei 2019 (Materials)' },
+  { id:'BS-019', analito:'Arsênio (As III)', substrato:'SPCE', biorreceptor:'L-cisteína', nanomat:'AuNPs', tecnica:'SWV', neletrodos:3, faixa:'0,1–100 µg/L', lod:'0,05 µg/L', sens:'— µA/µg·L', aplic:'Água/chá', status:'Validado', ref:'MDPI ref.' },
+  { id:'BS-020', analito:'Glutationa', substrato:'Grafeno', biorreceptor:'—', nanomat:'CuO-NPs', tecnica:'SWV', neletrodos:3, faixa:'0,5–100 µM', lod:'0,2 µM', sens:'— µA/mM', aplic:'Células', status:'Sintético', ref:'Modelo literário' }
+];
+
+let dbChartTechObj=null, dbChartSubsObj=null, dbChartAnaObj=null;
+
+function dbFilter() {
+  const q = document.getElementById('db-search').value.toLowerCase().trim();
+  const active = document.querySelector('#db-filters .chip.active');
+  const filter = active ? active.dataset.col : 'all';
+  return DB.filter(r => {
+    if (q && !(r.analito+' '+r.substrato+' '+r.biorreceptor+' '+r.nanomat+' '+r.tecnica+' '+r.aplic).toLowerCase().includes(q)) return false;
+    if (filter === 'all') return true;
+    if (filter === 'analito') return r.analito.toLowerCase().includes('glicose');
+    if (filter === 'substrato') return r.substrato.toLowerCase().includes('lig') || r.substrato.toLowerCase().includes('grafeno');
+    if (filter === 'nanomat') return r.nanomat.toLowerCase().includes('cu') || r.nanomat.includes('Au') || r.nanomat.includes('Pt') || r.nanomat.includes('Ag');
+    if (filter === 'tecnica') return ['swv','cv'].includes(r.tecnica.toLowerCase());
+    if (filter === 'status') return r.status === 'Validado';
+    return true;
+  });
+}
+function dbRender() {
+  const rows = dbFilter();
+  const tbody = document.querySelector('#db-table tbody');
+  tbody.innerHTML = rows.map(r => {
+    const pillClass = r.status==='Validado'?'green':(r.status==='Preliminar'?'amber':'gray');
+    return `<tr>
+      <td class="mono small">${r.id}</td>
+      <td><strong>${r.analito}</strong></td>
+      <td>${r.substrato}</td>
+      <td>${r.biorreceptor}</td>
+      <td>${r.nanomat}</td>
+      <td>${r.tecnica}</td>
+      <td class="num">${r.neletrodos}</td>
+      <td class="num small">${r.faixa}</td>
+      <td class="num small">${r.lod}</td>
+      <td class="num small">${r.sens}</td>
+      <td class="small">${r.aplic}</td>
+      <td><span class="pill ${pillClass}">${r.status}</span></td>
+      <td class="small" style="color:var(--text-dim)">${r.ref}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('db-count').textContent = rows.length + ' registros';
+  dbCharts();
+}
+function dbCharts() {
+  // technique distribution
+  const techs = {};
+  DB.forEach(r => techs[r.tecnica] = (techs[r.tecnica]||0)+1);
+  const subs = {};
+  DB.forEach(r => {
+    let k = r.substrato.toLowerCase().includes('lig') ? 'LIG' :
+            r.substrato.toLowerCase().includes('grafeno') ? 'Grafeno' :
+            r.substrato.toLowerCase().includes('cnt') ? 'CNT' :
+            r.substrato.toLowerCase().includes('spce') ? 'SPCE' : 'Outro';
+    subs[k] = (subs[k]||0)+1;
+  });
+  const anas = {};
+  DB.forEach(r => anas[r.analito] = (anas[r.analito]||0)+1);
+
+  function makeChart(id, obj, labels, data, colors) {
+    const ctx = document.getElementById(id).getContext('2d');
+    if (obj) obj.destroy();
+    obj = new Chart(ctx, {
+      type: 'doughnut',
+      data: { labels, datasets: [{ data, backgroundColor: colors, borderColor: '#1f2838', borderWidth: 2 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#e8eef5', font: { size: 10 }, boxWidth: 10 } } } }
+    });
+    return obj;
+  }
+  const palette = ['#00b4d8','#fbbf24','#f97316','#22c55e','#818cf8','#ec4899','#94a3b8','#10b981','#f59e0b','#ef4444','#06b6d4','#a855f7'];
+  dbChartTechObj = makeChart('dbChartTech', dbChartTechObj, Object.keys(techs), Object.values(techs), palette);
+  dbChartSubsObj = makeChart('dbChartSubs', dbChartSubsObj, Object.keys(subs), Object.values(subs), palette);
+  dbChartAnaObj = makeChart('dbChartAna', dbChartAnaObj, Object.keys(anas), Object.values(anas), palette);
+}
+function dbExport() {
+  let csv = 'ID,Analito,Substrato,Biorreceptor,Nanomaterial,Tecnica,NEletrodos,Faixa,LOD,Sensibilidade,Aplicacao,Status,Referencia\n';
+  DB.forEach(r => csv += `"${r.id}","${r.analito}","${r.substrato}","${r.biorreceptor}","${r.nanomat}","${r.tecnica}",${r.neletrodos},"${r.faixa}","${r.lod}","${r.sens}","${r.aplic}","${r.status}","${r.ref}"\n`);
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'biossensores.csv'; a.click();
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  // sliders live update
+  ['s1-conc','s1-kcat','s1-noise','s1-drift','s1-ep'].forEach(id => {
+    document.getElementById(id).addEventListener('input', sim1Redraw);
+  });
+  document.getElementById('s1-tech').addEventListener('change', sim1Redraw);
+  ['s2-sens','s2-i0','s2-noise','s2-rep','s2-bias'].forEach(id => {
+    document.getElementById(id).addEventListener('input', sim2Redraw);
+  });
+  document.getElementById('s2-model').addEventListener('change', sim2Redraw);
+  ['s3-ctrue','s3-n','s3-noise','s3-elec','s3-drift','s3-sens'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => {
+      // update display only, do not auto-run heavy MC
+      const map = { 's3-ctrue':'s3-ctrue-v','s3-n':'s3-n-v','s3-noise':'s3-noise-v','s3-elec':'s3-elec-v','s3-drift':'s3-drift-v','s3-sens':'s3-sens-v' };
+      const el = document.getElementById(map[id]);
+      if (el) {
+        const v = parseFloat(document.getElementById(id).value);
+        if (id === 's3-ctrue') el.textContent = fmt(v,3);
+        else if (id === 's3-n') el.textContent = v.toLocaleString('pt-BR');
+        else if (id === 's3-elec' || id === 's3-drift') el.textContent = v.toFixed(1);
+        else el.textContent = id==='s3-sens' ? v.toLocaleString('pt-BR') : v;
+      }
+    });
+  });
+  ['ba-n','ba-bias','ba-sd','ba-tol'].forEach(id => {
+    document.getElementById(id).addEventListener('input', baRedraw);
+  });
+  document.getElementById('db-search').addEventListener('input', dbRender);
+  document.querySelectorAll('#db-filters .chip').forEach(c => {
+    c.addEventListener('click', () => {
+      document.querySelectorAll('#db-filters .chip').forEach(x => x.classList.remove('active'));
+      c.classList.add('active');
+      dbRender();
+    });
+  });
+
+  // initial draws
+  sim1Redraw();
+  sim2Redraw();
+  sim3Run();
+  baRedraw();
+  drawRadar();
+  dbRender();
+});
+</script>
+
+</body>
+</html>
